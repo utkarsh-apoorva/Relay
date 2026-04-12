@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -62,8 +63,8 @@ def api_owner(x_api_key: Optional[str], db: Session) -> ApiKey:
 def resolve_actor_name(actor_id: Optional[str], db: Session) -> str:
     if not actor_id:
         return ""
-    if actor_id == "utkarsh":
-        return "Utkarsh"
+    if actor_id == os.getenv("RELAY_HUMAN_ID", "human"):
+        return os.getenv("RELAY_HUMAN_NAME", "Human")
     agent = db.query(Agent).filter(Agent.id == actor_id).first()
     return agent.name if agent else actor_id
 
@@ -163,7 +164,7 @@ def create_project(
         name=name,
         description=str(payload.get("description", "")).strip(),
         status=payload.get("status", "Active"),
-        lead_agent_id=payload.get("lead_agent_id") or owner.agent_id or "gandalf",
+        lead_agent_id=payload.get("lead_agent_id") or owner.agent_id or "",
     )
     db.add(project)
     db.commit()
@@ -253,11 +254,12 @@ def create_task(
     title = str(payload.get("title", "")).strip()
     if not title:
         raise HTTPException(400, "Task title is required")
-    reporter_id = str(payload.get("reporter_id") or owner.agent_id or "utkarsh")
+    _human_id = os.getenv("RELAY_HUMAN_ID", "human")
+    reporter_id = str(payload.get("reporter_id") or owner.agent_id or _human_id)
     assignee_id = str(payload.get("assignee_id") or reporter_id)
     tags = [tag for tag in parse_tags(payload.get("tags")).split(", ") if tag]
     for tag in {owner.agent_id, reporter_id}:
-        if tag and tag not in tags and tag != "utkarsh":
+        if tag and tag not in tags and tag != os.getenv("RELAY_HUMAN_ID", "human"):
             tags.append(tag)
     sprint_id = payload.get("sprint_id")
     sprint_id = int(sprint_id) if sprint_id not in (None, "", "null") else None
@@ -282,7 +284,7 @@ def create_task(
             Comment(
                 task_id=task.id,
                 author_id=reporter_id,
-                author_type="human" if reporter_id == "utkarsh" else "agent",
+                author_type="human" if reporter_id == os.getenv("RELAY_HUMAN_ID", "human") else "agent",
                 content=comment,
             )
         )
@@ -332,7 +334,7 @@ def add_comment(
     content = str(payload.get("content", "")).strip()
     if not content:
         raise HTTPException(400, "Comment content is required")
-    author_id = str(payload.get("author_id", "utkarsh"))
+    author_id = str(payload.get("author_id", os.getenv("RELAY_HUMAN_ID", "human")))
     db.add(
         Comment(
             task_id=task_id,
@@ -479,5 +481,6 @@ def approval_queue(
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
     api_owner(x_api_key, db)
-    tasks = db.query(Task).filter(Task.assignee_id == "utkarsh").order_by(Task.updated_at.desc()).all()
+    _human_id = os.getenv("RELAY_HUMAN_ID", "human")
+    tasks = db.query(Task).filter(Task.assignee_id == _human_id).order_by(Task.updated_at.desc()).all()
     return [serialize_task(task, db) for task in tasks]

@@ -1,16 +1,20 @@
 # Relay
 
-Multi-agent project management & coordination tool. Self-hosted, dark UI, built for human-AI team coordination.
+**An Orchestration Framework for AI Agents.**
+
+Self-hosted project management and coordination tool purpose-built for human–AI team collaboration. Agents and humans are first-class citizens.
 
 ## Quick Start
 
 ```bash
 # Backend
 pip install -r backend/requirements.txt
+cp .env.example .env        # fill in your values
 python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 
 # Frontend
 cd frontend
+cp .env.example .env        # fill in your API key
 npm install --legacy-peer-deps
 npm run dev
 ```
@@ -19,36 +23,52 @@ npm run dev
 - API: http://localhost:8000
 - API docs: http://localhost:8000/docs
 
-## Local config
+## Configuration
 
-Copy `.env.example` to `.env` (root) and `frontend/.env.example` to `frontend/.env`. Both are gitignored.
+All identity and API key configuration lives in `.env` files (gitignored). See `.env.example` and `frontend/.env.example` for the full list of variables.
 
-**Root `.env`:**
-```bash
-RELAY_API_KEY_UTKARSH=your-key
-RELAY_API_KEY_GANDALF=your-key
-RELAY_API_KEY_IVE=your-key
-RELAY_API_KEY_LINUS=your-key
-RELAY_API_KEY_THANOS=your-key
-```
+Key variables:
 
-**`frontend/.env`:**
-```bash
-VITE_RELAY_API_KEY=your-key
-```
+| Variable | Description |
+|---|---|
+| `RELAY_HUMAN_ID` | ID for the human owner (used in approval queue) |
+| `RELAY_HUMAN_KEY` | API key for the human |
+| `RELAY_AGENT_N_ID` | ID for agent N |
+| `RELAY_AGENT_N_KEY` | API key for agent N |
+| `VITE_RELAY_API_KEY` | Frontend API key |
 
 ## Features
 
 - **Kanban Board** — drag-and-drop task management across 5 columns
-- **Project Master List** — overview with status, progress, lead agent
-- **Approval Queue** — tasks assigned to Utkarsh with approve/reject/reassign
-- **Calendar View** — read-only view of tasks with due dates
+- **Project Master List** — overview with status, progress, lead agent, % done
+- **Approval Queue** — tasks assigned to the human owner
+- **Calendar View** — read-only 35-day view of tasks with due dates
 - **Agent Profiles** — per-agent cards with model, status, assigned tasks
 - **Token Usage** — reads from OpenClaw session stores, per-agent cost breakdown
 - **Sprint Management** — create and filter by sprint within a project
-- **REST API** — full CRUD for tasks, projects, sprints, comments
+- **REST API** — full CRUD for tasks, projects, sprints, comments; API key auth
+
+## Agent API
+
+Authenticate with `X-API-Key: <your-key>` header.
+
+```
+GET    /api/projects
+POST   /api/projects
+PATCH  /api/projects/:id
+GET    /api/tasks
+POST   /api/tasks
+PATCH  /api/tasks/:id
+POST   /api/tasks/:id/comment
+GET    /api/sprints
+POST   /api/sprints
+GET    /api/agents
+GET    /api/usage/tokens
+GET    /api/calendar
+GET    /api/approval-queue
+```
 
 ## Tech Stack
 
 - **Backend:** Python 3.9+, FastAPI, SQLAlchemy, SQLite
-- **Frontend:** React 18, Vite, @hello-pangea/dnd, Tailwind-free dark CSS
+- **Frontend:** React 18, Vite, @hello-pangea/dnd

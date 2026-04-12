@@ -22,26 +22,21 @@ def load_local_env() -> None:
 load_local_env()
 
 
-def required_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise RuntimeError(f"Missing required environment variable: {name}")
-    return value
-
-API_KEYS = {
-    "utkarsh": required_env("RELAY_API_KEY_UTKARSH"),
-    "gandalf": required_env("RELAY_API_KEY_GANDALF"),
-    "ive": required_env("RELAY_API_KEY_IVE"),
-    "linus": required_env("RELAY_API_KEY_LINUS"),
-    "thanos": required_env("RELAY_API_KEY_THANOS"),
-}
-
-AGENTS = [
-    ("gandalf", "Gandalf", "🧙", "Orchestrator", "zai/glm-5.1", "zai", "Online"),
-    ("ive", "Ive", "🎨", "Design & Product", "anthropic/claude-sonnet-4-6", "anthropic", "Idle"),
-    ("linus", "Linus", "🐧", "Coding", "openai/gpt-5.4-mini", "openai", "Online"),
-    ("thanos", "Thanos", "🟣", "Experimentation", "zai/glm-5.1", "zai", "Idle"),
-]
+def get_api_keys():
+    keys = {}
+    i = 1
+    while True:
+        agent_id = os.getenv(f"RELAY_AGENT_{i}_ID")
+        agent_key = os.getenv(f"RELAY_AGENT_{i}_KEY")
+        if not agent_id or not agent_key:
+            break
+        keys[agent_id] = agent_key
+        i += 1
+    human_id = os.getenv("RELAY_HUMAN_ID", "human")
+    human_key = os.getenv("RELAY_HUMAN_KEY")
+    if human_key:
+        keys[human_id] = human_key
+    return keys
 
 
 def ensure_agent(db: Session, agent_id: str, name: str, avatar: str, role: str, model: str, provider: str, status: str) -> None:
@@ -56,18 +51,11 @@ def ensure_agent(db: Session, agent_id: str, name: str, avatar: str, role: str, 
         agent.last_active = datetime.utcnow().isoformat()
         db.add(agent)
         return
-    db.add(
-        Agent(
-            id=agent_id,
-            name=name,
-            avatar=avatar,
-            role=role,
-            model=model,
-            provider=provider,
-            status=status,
-            last_active=datetime.utcnow().isoformat(),
-        )
-    )
+    db.add(Agent(
+        id=agent_id, name=name, avatar=avatar, role=role,
+        model=model, provider=provider, status=status,
+        last_active=datetime.utcnow().isoformat(),
+    ))
 
 
 def ensure_project(db: Session, name: str, description: str, status: str, lead_agent_id: str):
@@ -98,18 +86,7 @@ def ensure_sprint(db: Session, project_id: int, name: str, start_date: str, end_
     return sprint
 
 
-def ensure_task(
-    db: Session,
-    project_id: int,
-    sprint_id: int,
-    title: str,
-    description: str,
-    assignee_id: str,
-    reporter_id: str,
-    priority: str,
-    status: str,
-    due_date: str,
-):
+def ensure_task(db, project_id, sprint_id, title, description, assignee_id, reporter_id, priority, status, due_date):
     task = db.query(Task).filter(Task.project_id == project_id, Task.title == title).first()
     if task:
         task.description = description
@@ -119,21 +96,13 @@ def ensure_task(
         task.status = status
         task.sprint_id = sprint_id
         task.due_date = due_date
-        task.tags = "relay"
         task.updated_at = datetime.utcnow().isoformat()
         db.add(task)
         return task
     task = Task(
-        project_id=project_id,
-        sprint_id=sprint_id,
-        title=title,
-        description=description,
-        assignee_id=assignee_id,
-        reporter_id=reporter_id,
-        priority=priority,
-        status=status,
-        tags="relay",
-        due_date=due_date,
+        project_id=project_id, sprint_id=sprint_id, title=title,
+        description=description, assignee_id=assignee_id, reporter_id=reporter_id,
+        priority=priority, status=status, tags="", due_date=due_date,
     )
     db.add(task)
     return task
@@ -144,79 +113,48 @@ def ensure_key(db: Session, agent_id: str, key: str) -> None:
         db.add(ApiKey(agent_id=agent_id, key=key))
 
 
+def seed_from_env(db: Session) -> None:
+    """
+    Seed agents and API keys from environment variables.
+
+    Set these in your .env:
+      RELAY_HUMAN_ID=human
+      RELAY_HUMAN_KEY=your-key
+
+      RELAY_AGENT_1_ID=agent1
+      RELAY_AGENT_1_NAME=Agent One
+      RELAY_AGENT_1_AVATAR=🤖
+      RELAY_AGENT_1_ROLE=Worker
+      RELAY_AGENT_1_MODEL=openai/gpt-4o
+      RELAY_AGENT_1_PROVIDER=openai
+      RELAY_AGENT_1_KEY=agent1-key
+      # repeat for RELAY_AGENT_2_, RELAY_AGENT_3_, ...
+    """
+    i = 1
+    while True:
+        agent_id = os.getenv(f"RELAY_AGENT_{i}_ID")
+        if not agent_id:
+            break
+        name = os.getenv(f"RELAY_AGENT_{i}_NAME", agent_id)
+        avatar = os.getenv(f"RELAY_AGENT_{i}_AVATAR", "🤖")
+        role = os.getenv(f"RELAY_AGENT_{i}_ROLE", "Agent")
+        model = os.getenv(f"RELAY_AGENT_{i}_MODEL", "")
+        provider = os.getenv(f"RELAY_AGENT_{i}_PROVIDER", "")
+        key = os.getenv(f"RELAY_AGENT_{i}_KEY")
+        ensure_agent(db, agent_id, name, avatar, role, model, provider, "Idle")
+        if key:
+            ensure_key(db, agent_id, key)
+        i += 1
+
+    human_id = os.getenv("RELAY_HUMAN_ID", "human")
+    human_name = os.getenv("RELAY_HUMAN_NAME", "Human")
+    human_key = os.getenv("RELAY_HUMAN_KEY")
+    ensure_agent(db, human_id, human_name, "👤", "Owner", "", "", "Online")
+    if human_key:
+        ensure_key(db, human_id, human_key)
+
+    db.commit()
+
+
 def seed(db: Session):
-    for agent in AGENTS:
-        ensure_agent(db, *agent)
-    db.commit()
-
-    project = ensure_project(db, "Relay", "Multi-agent project management", "Active", "gandalf")
-    db.commit()
-    db.refresh(project)
-
-    sprint = ensure_sprint(
-        db,
-        project.id,
-        "MVP Sprint",
-        datetime.utcnow().date().isoformat(),
-        (datetime.utcnow() + timedelta(days=14)).date().isoformat(),
-    )
-    db.commit()
-    db.refresh(sprint)
-
-    due_today = datetime.utcnow().date()
-    tasks = [
-        (
-            "Build backend API",
-            "Implement tasks, projects, agents, usage endpoints",
-            "linus",
-            "gandalf",
-            "P1",
-            "In Progress",
-            due_today + timedelta(days=2),
-        ),
-        (
-            "Design dark UI",
-            "Minimal dashboard and navigation",
-            "ive",
-            "gandalf",
-            "P2",
-            "To Do",
-            due_today + timedelta(days=4),
-        ),
-        (
-            "Usage parser",
-            "Read OpenClaw session stores",
-            "thanos",
-            "linus",
-            "P1",
-            "Backlog",
-            due_today + timedelta(days=5),
-        ),
-        (
-            "Approval flow",
-            "Support Utkarsh approvals",
-            "utkarsh",
-            "gandalf",
-            "P0",
-            "In Review",
-            due_today + timedelta(days=3),
-        ),
-    ]
-    for title, desc, assignee, reporter, priority, status, due in tasks:
-        ensure_task(
-            db,
-            project.id,
-            sprint.id,
-            title,
-            desc,
-            assignee,
-            reporter,
-            priority,
-            status,
-            due.isoformat(),
-        )
-
-    for agent_id in ["gandalf", "ive", "linus", "thanos", "utkarsh"]:
-        ensure_key(db, agent_id, API_KEYS[agent_id])
-
-    db.commit()
+    seed_from_env(db)

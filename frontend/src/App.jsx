@@ -18,8 +18,8 @@ const blankTask = (projectId = '', sprintId = '') => ({
   sprint_id: sprintId ? String(sprintId) : '',
   title: '',
   description: '',
-  assignee_id: 'utkarsh',
-  reporter_id: 'utkarsh',
+  assignee_id: HUMAN_ID,
+  reporter_id: HUMAN_ID,
   priority: 'P2',
   status: 'Backlog',
   tags: '',
@@ -31,7 +31,7 @@ const blankProject = () => ({
   name: '',
   description: '',
   status: 'Active',
-  lead_agent_id: 'gandalf',
+  lead_agent_id: '',
 })
 
 const blankSprint = (projectId = '') => ({
@@ -176,7 +176,7 @@ export default function App() {
   )
   const kanbanTasks = sprintTasks
   const approvalTasks = useMemo(
-    () => projectTasks.filter((task) => task.assignee_id === 'utkarsh'),
+    () => projectTasks.filter((task) => task.assignee_id === HUMAN_ID),
     [projectTasks],
   )
   const selectedAgentTasks = useMemo(
@@ -237,8 +237,8 @@ export default function App() {
             sprint_id: baseSprintId,
             title: task.title,
             description: task.description || '',
-            assignee_id: task.assignee_id || 'utkarsh',
-            reporter_id: task.reporter_id || 'utkarsh',
+            assignee_id: task.assignee_id || HUMAN_ID,
+            reporter_id: task.reporter_id || HUMAN_ID,
             priority: task.priority || 'P2',
             status: task.status || 'Backlog',
             tags: task.tags || '',
@@ -285,7 +285,7 @@ export default function App() {
       if (commentText.trim()) {
         await api(`/api/tasks/${selectedTask.id}/comment`, {
           method: 'POST',
-          body: JSON.stringify({ content: commentText.trim(), author_id: 'utkarsh', author_type: 'human' }),
+          body: JSON.stringify({ content: commentText.trim(), author_id: HUMAN_ID, author_type: 'human' }),
         })
       }
     } else {
@@ -345,23 +345,23 @@ export default function App() {
     if (reason) {
       await api(`/api/tasks/${task.id}/comment`, {
         method: 'POST',
-        body: JSON.stringify({ content: reason, author_id: 'utkarsh', author_type: 'human' }),
+        body: JSON.stringify({ content: reason, author_id: HUMAN_ID, author_type: 'human' }),
       })
     }
     await quickUpdateTask(task.id, { status: 'Rejected' })
   }
 
   const approveTask = async (task) => {
-    const target = approvalTargets[task.id] || 'gandalf'
+    const target = approvalTargets[task.id] || agents[0]?.id || ''
     await quickUpdateTask(task.id, { assignee_id: target, status: 'To Do' })
   }
 
   const reassignTask = async (task) => {
-    const target = approvalTargets[task.id] || 'gandalf'
+    const target = approvalTargets[task.id] || agents[0]?.id || ''
     await quickUpdateTask(task.id, { assignee_id: target })
   }
 
-  const people = [{ id: 'utkarsh', name: 'Utkarsh', avatar: '👤' }, ...agents]
+  const people = [{ id: HUMAN_ID, name: HUMAN_NAME, avatar: '👤' }, ...agents]
 
   return (
     <div className="app-shell">
@@ -446,7 +446,7 @@ export default function App() {
         <div className="panel">
           <div className="panel-title">Approval queue</div>
           <div className="metric">{approvalCount}</div>
-          <div className="muted">Tasks waiting on Utkarsh</div>
+          <div className="muted">Tasks waiting on {HUMAN_NAME}</div>
         </div>
       </aside>
 
@@ -584,7 +584,7 @@ export default function App() {
         {view === 'approval' ? (
           <section className="grid cards-2">
             {approvalTasks.map((task) => {
-              const target = approvalTargets[task.id] || 'gandalf'
+              const target = approvalTargets[task.id] || agents[0]?.id || ''
               return (
                 <article className="card" key={task.id}>
                   <div className="row-between gap">
@@ -598,7 +598,7 @@ export default function App() {
                   <div className="muted">{task.project_name} · {task.priority} · {prettyDate(task.due_date)}</div>
                   <Field label="Reassign to">
                     <select value={target} onChange={(e) => setApprovalTargets((current) => ({ ...current, [task.id]: e.target.value }))}>
-                      {people.filter((person) => person.id !== 'utkarsh').map((person) => (
+                      {people.filter((person) => person.id !== HUMAN_ID).map((person) => (
                         <option key={person.id} value={person.id}>{person.name}</option>
                       ))}
                     </select>
@@ -781,7 +781,7 @@ export default function App() {
             <div className="grid two-col">
               <Field label="Assignee">
                 <select value={taskDraft.assignee_id} onChange={(e) => setTaskDraft((current) => ({ ...current, assignee_id: e.target.value }))}>
-                  <option value="utkarsh">Utkarsh</option>
+                  <option value={HUMAN_ID}>{HUMAN_NAME}</option>
                   {agents.map((agent) => (
                     <option key={agent.id} value={agent.id}>{agent.name}</option>
                   ))}
@@ -789,7 +789,7 @@ export default function App() {
               </Field>
               <Field label="Reporter">
                 <select value={taskDraft.reporter_id} onChange={(e) => setTaskDraft((current) => ({ ...current, reporter_id: e.target.value }))}>
-                  <option value="utkarsh">Utkarsh</option>
+                  <option value={HUMAN_ID}>{HUMAN_NAME}</option>
                   {agents.map((agent) => (
                     <option key={agent.id} value={agent.id}>{agent.name}</option>
                   ))}
@@ -866,7 +866,7 @@ export default function App() {
               </Field>
               <Field label="Lead agent">
                 <select value={projectDraft.lead_agent_id} onChange={(e) => setProjectDraft((current) => ({ ...current, lead_agent_id: e.target.value }))}>
-                  <option value="gandalf">Gandalf</option>
+                  <option 
                   {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
                 </select>
               </Field>
