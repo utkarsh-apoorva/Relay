@@ -4,24 +4,21 @@
 
 :root {
   color-scheme: dark;
-  --bg: #080d1a;
-  --panel: #10182a;
-  --panel-2: #0c1323;
-  --border: #22304b;
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --accent: #7c3aed;
-  --accent-2: #2563eb;
-  --danger: #ef4444;
+  --bg: #313338;
+  --panel: #2b2d31;
+  --panel-2: #1e1f22;
+  --border: #3f4147;
+  --text: #dbdee1;
+  --muted: #949ba4;
+  --accent: #5865f2;
+  --accent-2: #4752c4;
+  --danger: #f23f42;
 }
 
 body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(124, 58, 237, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 32%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
 }
 
@@ -40,7 +37,7 @@ input,
 select,
 textarea {
   width: 100%;
-  background: #0b1221;
+  background: var(--panel-2);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -51,8 +48,8 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: rgba(124, 58, 237, 0.8);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
 }
 
 .app-shell {
@@ -62,8 +59,8 @@ textarea:focus {
 }
 
 .sidebar {
-  background: rgba(8, 13, 26, 0.88);
-  border-right: 1px solid rgba(34, 48, 75, 0.9);
+  background: var(--panel-2);
+  border-right: 1px solid var(--border);
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -90,7 +87,7 @@ textarea:focus {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(37, 99, 235, 0.3));
+  background: var(--accent);
   border: 1px solid var(--border);
   font-size: 22px;
 }
@@ -134,8 +131,8 @@ textarea:focus {
 .panel,
 .card,
 .modal {
-  background: rgba(16, 24, 42, 0.92);
-  border: 1px solid rgba(34, 48, 75, 0.95);
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 18px;
 }
 
@@ -187,7 +184,7 @@ textarea:focus {
 }
 
 .nav-button {
-  background: #0b1221;
+  background: var(--panel-2);
   color: var(--text);
   padding: 12px 14px;
   text-align: left;
@@ -197,12 +194,12 @@ textarea:focus {
 .nav-button.active,
 .project-chip.active,
 .agent-card.active {
-  border-color: rgba(124, 58, 237, 0.8);
-  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.15) inset;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(88, 101, 242, 0.15) inset;
 }
 
 .project-chip {
-  background: #0b1221;
+  background: var(--panel-2);
   border-color: var(--border);
   color: var(--text);
   padding: 12px;
@@ -250,7 +247,7 @@ textarea:focus {
   border-radius: 999px;
   font-size: 12px;
   border: 1px solid var(--border);
-  background: #0b1221;
+  background: var(--panel-2);
 }
 
 .metric {
@@ -312,12 +309,12 @@ textarea:focus {
 .ghost-button,
 .icon-button {
   padding: 10px 14px;
-  background: #0b1221;
+  background: var(--panel-2);
   color: var(--text);
 }
 
 .primary-button {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.8), rgba(37, 99, 235, 0.8));
+  background: var(--accent);
 }
 
 .secondary-button,
@@ -327,7 +324,7 @@ textarea:focus {
 }
 
 .danger-button {
-  border-color: rgba(239, 68, 68, 0.45);
+  border-color: var(--danger);
   color: #fecaca;
 }
 
@@ -360,8 +357,8 @@ textarea:focus {
 
 .error-banner {
   padding: 12px 14px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(242, 63, 66, 0.12);
+  border: 1px solid rgba(242, 63, 66, 0.35);
   border-radius: 14px;
   margin-bottom: 16px;
 }
@@ -390,7 +387,7 @@ textarea:focus {
 .calendar-task {
   width: 100%;
   text-align: left;
-  background: #0b1221;
+  background: var(--panel-2);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -434,7 +431,7 @@ textarea:focus {
   min-height: 170px;
   padding: 12px;
   border-radius: 16px;
-  background: rgba(16, 24, 42, 0.8);
+  background: var(--panel);
   border: 1px solid var(--border);
 }
 
@@ -462,7 +459,7 @@ textarea:focus {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  background: #0b1221;
+  background: var(--panel-2);
   border: 1px solid var(--border);
   font-size: 24px;
 }
@@ -472,13 +469,13 @@ textarea:focus {
   padding: 12px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: #0b1221;
+  background: var(--panel-2);
 }
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.72);
+  background: rgba(30, 31, 34, 0.72);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -521,7 +518,7 @@ textarea:focus {
 .table td {
   padding: 10px 8px;
   text-align: left;
-  border-bottom: 1px solid rgba(34, 48, 75, 0.9);
+  border-bottom: 1px solid var(--border);
 }
 
 @media (max-width: 1200px) {
