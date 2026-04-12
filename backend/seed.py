@@ -1,8 +1,40 @@
+import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from .models import Agent, ApiKey, Project, Sprint, Task
+
+
+def load_local_env() -> None:
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.exists():
+        return
+    for raw in env_path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_local_env()
+
+
+def required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+API_KEYS = {
+    "utkarsh": required_env("RELAY_API_KEY_UTKARSH"),
+    "gandalf": required_env("RELAY_API_KEY_GANDALF"),
+    "ive": required_env("RELAY_API_KEY_IVE"),
+    "linus": required_env("RELAY_API_KEY_LINUS"),
+    "thanos": required_env("RELAY_API_KEY_THANOS"),
+}
 
 AGENTS = [
     ("gandalf", "Gandalf", "🧙", "Orchestrator", "zai/glm-5.1", "zai", "Online"),
@@ -87,7 +119,7 @@ def ensure_task(
         task.status = status
         task.sprint_id = sprint_id
         task.due_date = due_date
-        task.tags = "agentos"
+        task.tags = "relay"
         task.updated_at = datetime.utcnow().isoformat()
         db.add(task)
         return task
@@ -100,7 +132,7 @@ def ensure_task(
         reporter_id=reporter_id,
         priority=priority,
         status=status,
-        tags="agentos",
+        tags="relay",
         due_date=due_date,
     )
     db.add(task)
@@ -117,7 +149,7 @@ def seed(db: Session):
         ensure_agent(db, *agent)
     db.commit()
 
-    project = ensure_project(db, "AgentOS", "Multi-agent project management", "Active", "gandalf")
+    project = ensure_project(db, "Relay", "Multi-agent project management", "Active", "gandalf")
     db.commit()
     db.refresh(project)
 
@@ -185,6 +217,6 @@ def seed(db: Session):
         )
 
     for agent_id in ["gandalf", "ive", "linus", "thanos", "utkarsh"]:
-        ensure_key(db, agent_id, f"{agent_id}-key")
+        ensure_key(db, agent_id, API_KEYS[agent_id])
 
     db.commit()

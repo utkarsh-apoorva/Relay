@@ -18,7 +18,7 @@ API_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
-app = FastAPI(title="AgentOS", version="0.1.0")
+app = FastAPI(title="Relay", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=API_ORIGINS,

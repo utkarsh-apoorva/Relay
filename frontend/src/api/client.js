@@ -1,7 +1,7 @@
-export const getApiKey = () => localStorage.getItem('agentos_api_key') || 'utkarsh-key'
+export const getApiKey = () => localStorage.getItem('relay_api_key') || import.meta.env.VITE_RELAY_API_KEY || ''
 
 export const setApiKey = (value) => {
-  localStorage.setItem('agentos_api_key', value)
+  localStorage.setItem('relay_api_key', value)
 }
 
 export const api = async (path, opts = {}) => {

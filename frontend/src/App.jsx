@@ -56,7 +56,7 @@ function Modal({ title, onClose, children, footer }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <div className="eyebrow">AgentOS</div>
+            <div className="eyebrow">Relay</div>
             <h3>{title}</h3>
           </div>
           <button className="icon-button" onClick={onClose} type="button">✕</button>
@@ -369,7 +369,7 @@ export default function App() {
         <div className="brand">
           <div className="brand-mark">🦞</div>
           <div>
-            <div className="brand-name">AgentOS</div>
+            <div className="brand-name">Relay</div>
             <div className="muted">local coordination hub</div>
           </div>
         </div>
@@ -381,7 +381,7 @@ export default function App() {
             onChange={(e) => setApiKeyState(e.target.value)}
             spellCheck="false"
           />
-          <div className="muted">Default: utkarsh-key</div>
+          <div className="muted">Default: frontend/.env</div>
         </div>
 
         <div className="nav">
@@ -454,7 +454,7 @@ export default function App() {
         <header className="topbar">
           <div>
             <div className="eyebrow">localhost:3000</div>
-            <h1>{VIEWS.find(([id]) => id === view)?.[1] || 'AgentOS'}</h1>
+            <h1>{VIEWS.find(([id]) => id === view)?.[1] || 'Relay'}</h1>
             <div className="muted">
               {currentProject ? `${currentProject.name}` : 'All projects'}
               {currentSprint ? ` · ${currentSprint.name}` : ''}
@@ -812,7 +812,7 @@ export default function App() {
               </Field>
             </div>
             <Field label="Tags">
-              <input value={taskDraft.tags} onChange={(e) => setTaskDraft((current) => ({ ...current, tags: e.target.value }))} placeholder="agentos, backend" />
+              <input value={taskDraft.tags} onChange={(e) => setTaskDraft((current) => ({ ...current, tags: e.target.value }))} placeholder="relay, backend" />
             </Field>
             {!selectedTask ? (
               <Field label="Initial comment">

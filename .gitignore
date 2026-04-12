@@ -5,3 +5,8 @@ dist/
 __pycache__/
 *.pyc
 .env
+frontend/.env
+memory/
+skills/
+memory/
+skills/

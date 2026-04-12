@@ -1,4 +1,4 @@
-# AgentOS
+# Relay
 
 Multi-agent project management & coordination tool. Self-hosted, dark UI, built for human-AI team coordination.
 
@@ -19,15 +19,23 @@ npm run dev
 - API: http://localhost:8000
 - API docs: http://localhost:8000/docs
 
-## Default API Keys
+## Local config
 
-| Agent    | Key            |
-|----------|----------------|
-| Utkarsh  | `utkarsh-key`  |
-| Gandalf  | `gandalf-key`  |
-| Ive      | `ive-key`      |
-| Linus    | `linus-key`    |
-| Thanos   | `thanos-key`   |
+Copy `.env.example` to `.env` (root) and `frontend/.env.example` to `frontend/.env`. Both are gitignored.
+
+**Root `.env`:**
+```bash
+RELAY_API_KEY_UTKARSH=your-key
+RELAY_API_KEY_GANDALF=your-key
+RELAY_API_KEY_IVE=your-key
+RELAY_API_KEY_LINUS=your-key
+RELAY_API_KEY_THANOS=your-key
+```
+
+**`frontend/.env`:**
+```bash
+VITE_RELAY_API_KEY=your-key
+```
 
 ## Features
 
