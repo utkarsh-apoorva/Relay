@@ -110,3 +110,21 @@ cp .env.example .env   # fill in VITE_RELAY_API_KEY etc.
 npm install --legacy-peer-deps
 npm run dev            # starts on http://localhost:3000
 ```
+
+## Theme Palette
+
+Relay's dark UI now uses Discord's dark mode colors in `src/styles.css`:
+
+| Token | Value |
+|---|---|
+| Background | `#313338` |
+| Surface | `#2b2d31` |
+| Panel deeper | `#1e1f22` |
+| Border | `#3f4147` |
+| Text primary | `#dbdee1` |
+| Text muted | `#949ba4` |
+| Accent blurple | `#5865f2` |
+| Accent hover | `#4752c4` |
+| Positive green | `#23a559` |
+| Danger | `#f23f42` |
+| Caution yellow | `#f0b232` |
