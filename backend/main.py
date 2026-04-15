@@ -1,36 +1,113 @@
 import json
 import os
+from collections import defaultdict, deque
 from datetime import datetime
 from pathlib import Path
+from time import monotonic
 from typing import Any, Optional
+from urllib.parse import urlparse
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
 from .models import Agent, ApiKey, Comment, Project, Sprint, Task
+from .security import ensure_api_key_storage, hash_api_key, lookup_api_key, migrate_api_keys
 from .seed import seed
 
-API_ORIGINS = [
+DEFAULT_API_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
-app = FastAPI(title="Relay", version="0.1.0")
+TASK_STATUSES = {"Backlog", "To Do", "In Progress", "In Review", "Done", "Rejected"}
+TASK_PRIORITIES = {"P0", "P1", "P2", "P3"}
+COMMENT_AUTHOR_TYPES = {"human", "agent"}
+RATE_LIMIT_REQUESTS = max(1, int(os.getenv("RELAY_RATE_LIMIT_REQUESTS", "120")))
+RATE_LIMIT_WINDOW_SECONDS = max(1, int(os.getenv("RELAY_RATE_LIMIT_WINDOW_SECONDS", "60")))
+MAX_BODY_BYTES = max(1024, int(os.getenv("RELAY_MAX_BODY_BYTES", "1048576")))
+IS_PRODUCTION = os.getenv("RELAY_ENV", "development").lower() == "production"
+REQUEST_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
+
+
+def get_cors_origins() -> list[str]:
+    raw = os.getenv("RELAY_CORS_ORIGINS", "")
+    origins: list[str] = []
+    for origin in [item.strip().rstrip("/") for item in raw.split(",") if item.strip()]:
+        parsed = urlparse(origin)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise RuntimeError(f"Invalid RELAY_CORS_ORIGINS entry: {origin}")
+        origins.append(origin)
+    return origins or DEFAULT_API_ORIGINS
+
+
+API_ORIGINS = get_cors_origins()
+
+app = FastAPI(
+    title="Relay",
+    version="0.1.0",
+    docs_url=None if IS_PRODUCTION else "/docs",
+    redoc_url=None if IS_PRODUCTION else "/redoc",
+    openapi_url=None if IS_PRODUCTION else "/openapi.json",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=API_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
+
+def request_identity(request: Request) -> str:
+    api_key = request.headers.get("X-API-Key", "").strip()
+    if api_key:
+        return f"key:{hash_api_key(api_key)[:24]}"
+    client_host = request.client.host if request.client else "unknown"
+    return f"ip:{client_host}"
+
+
+@app.middleware("http")
+async def harden_requests(request: Request, call_next):
+    if request.url.path.startswith("/api/"):
+        content_length = request.headers.get("content-length", "").strip()
+        if content_length:
+            try:
+                if int(content_length) > MAX_BODY_BYTES:
+                    return JSONResponse({"detail": "Request body too large"}, status_code=413)
+            except ValueError:
+                return JSONResponse({"detail": "Invalid Content-Length header"}, status_code=400)
+
+        if request.url.path != "/api/health":
+            now = monotonic()
+            bucket = REQUEST_BUCKETS[request_identity(request)]
+            while bucket and now - bucket[0] >= RATE_LIMIT_WINDOW_SECONDS:
+                bucket.popleft()
+            if len(bucket) >= RATE_LIMIT_REQUESTS:
+                retry_after = max(1, int(RATE_LIMIT_WINDOW_SECONDS - (now - bucket[0])))
+                return JSONResponse(
+                    {"detail": "Too many requests"},
+                    status_code=429,
+                    headers={"Retry-After": str(retry_after)},
+                )
+            bucket.append(now)
+
+    response = await call_next(request)
+    response.headers.setdefault("Cache-Control", "no-store")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    return response
+
 Base.metadata.create_all(bind=engine)
+ensure_api_key_storage(engine)
 with SessionLocal() as db:
     seed(db)
+    migrate_api_keys(db)
 
 
 def now_iso() -> str:
@@ -51,10 +128,74 @@ def parse_tags(value: Any) -> str:
     return ", ".join(deduped)
 
 
+def clean_text(value: Any, field: str, *, required: bool = False, max_length: int = 5000) -> str:
+    text = str(value or "").strip()
+    if required and not text:
+        raise HTTPException(400, f"{field} is required")
+    if len(text) > max_length:
+        raise HTTPException(400, f"{field} is too long")
+    return text
+
+
+def clean_choice(value: Any, field: str, *, allowed: set[str], default: str) -> str:
+    choice = str(value or default).strip() or default
+    if choice not in allowed:
+        raise HTTPException(400, f"Invalid {field}")
+    return choice
+
+
+def clean_optional_int(value: Any, field: str) -> Optional[int]:
+    if value in (None, "", "null"):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(400, f"Invalid {field}") from exc
+    if parsed <= 0:
+        raise HTTPException(400, f"Invalid {field}")
+    return parsed
+
+
+def clean_required_int(value: Any, field: str) -> int:
+    parsed = clean_optional_int(value, field)
+    if parsed is None:
+        raise HTTPException(400, f"{field} is required")
+    return parsed
+
+
+def clean_date(value: Any, field: str) -> str:
+    text = clean_text(value, field, max_length=10)
+    if not text:
+        return ""
+    try:
+        datetime.strptime(text, "%Y-%m-%d")
+    except ValueError as exc:
+        raise HTTPException(400, f"Invalid {field}") from exc
+    return text
+
+
+def require_project(project_id: int, db: Session) -> Project:
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    return project
+
+
+def validate_sprint(project_id: int, sprint_id: Optional[int], db: Session) -> Optional[int]:
+    if sprint_id is None:
+        return None
+    sprint = db.get(Sprint, sprint_id)
+    if not sprint:
+        raise HTTPException(404, "Sprint not found")
+    if sprint.project_id != project_id:
+        raise HTTPException(400, "Sprint does not belong to project")
+    return sprint_id
+
+
 def api_owner(x_api_key: Optional[str], db: Session) -> ApiKey:
     if not x_api_key:
         raise HTTPException(401, "Missing API key")
-    key = db.query(ApiKey).filter(ApiKey.key == x_api_key).first()
+    key = lookup_api_key(db, x_api_key)
     if not key:
         raise HTTPException(401, "Invalid API key")
     return key
@@ -157,14 +298,15 @@ def create_project(
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
     owner = api_owner(x_api_key, db)
-    name = str(payload.get("name", "")).strip()
-    if not name:
-        raise HTTPException(400, "Project name is required")
+    name = clean_text(payload.get("name"), "Project name", required=True, max_length=160)
+    description = clean_text(payload.get("description", ""), "Project description")
+    status = clean_text(payload.get("status", "Active"), "Project status", max_length=40) or "Active"
+    lead_agent_id = clean_text(payload.get("lead_agent_id") or owner.agent_id or "", "Lead agent", max_length=120)
     project = Project(
         name=name,
-        description=str(payload.get("description", "")).strip(),
-        status=payload.get("status", "Active"),
-        lead_agent_id=payload.get("lead_agent_id") or owner.agent_id or "",
+        description=description,
+        status=status,
+        lead_agent_id=lead_agent_id,
     )
     db.add(project)
     db.commit()
@@ -180,12 +322,15 @@ def patch_project(
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
     api_owner(x_api_key, db)
-    project = db.get(Project, project_id)
-    if not project:
-        raise HTTPException(404, "Project not found")
-    for field in ["name", "description", "status", "lead_agent_id"]:
-        if field in payload:
-            setattr(project, field, payload[field])
+    project = require_project(project_id, db)
+    if "name" in payload:
+        project.name = clean_text(payload["name"], "Project name", required=True, max_length=160)
+    if "description" in payload:
+        project.description = clean_text(payload["description"], "Project description")
+    if "status" in payload:
+        project.status = clean_text(payload["status"], "Project status", required=True, max_length=40)
+    if "lead_agent_id" in payload:
+        project.lead_agent_id = clean_text(payload["lead_agent_id"], "Lead agent", max_length=120)
     project.updated_at = now_iso()
     db.add(project)
     db.commit()
@@ -237,7 +382,7 @@ def list_tasks(
     if assignee_id is not None:
         query = query.filter(Task.assignee_id == assignee_id)
     if status is not None:
-        query = query.filter(Task.status == status)
+        query = query.filter(Task.status == clean_choice(status, "status", allowed=TASK_STATUSES, default="Backlog"))
     if sprint_id is not None:
         query = query.filter(Task.sprint_id == sprint_id)
     tasks = query.order_by(Task.updated_at.desc()).all()
@@ -251,34 +396,33 @@ def create_task(
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
     owner = api_owner(x_api_key, db)
-    title = str(payload.get("title", "")).strip()
-    if not title:
-        raise HTTPException(400, "Task title is required")
+    title = clean_text(payload.get("title"), "Task title", required=True, max_length=200)
     _human_id = os.getenv("RELAY_HUMAN_ID", "human")
-    reporter_id = str(payload.get("reporter_id") or owner.agent_id or _human_id)
-    assignee_id = str(payload.get("assignee_id") or reporter_id)
+    project_id = clean_required_int(payload.get("project_id"), "project_id")
+    require_project(project_id, db)
+    reporter_id = clean_text(payload.get("reporter_id") or owner.agent_id or _human_id, "Reporter", max_length=120)
+    assignee_id = clean_text(payload.get("assignee_id") or reporter_id, "Assignee", max_length=120)
     tags = [tag for tag in parse_tags(payload.get("tags")).split(", ") if tag]
     for tag in {owner.agent_id, reporter_id}:
         if tag and tag not in tags and tag != os.getenv("RELAY_HUMAN_ID", "human"):
             tags.append(tag)
-    sprint_id = payload.get("sprint_id")
-    sprint_id = int(sprint_id) if sprint_id not in (None, "", "null") else None
+    sprint_id = validate_sprint(project_id, clean_optional_int(payload.get("sprint_id"), "sprint_id"), db)
     task = Task(
-        project_id=int(payload["project_id"]),
+        project_id=project_id,
         sprint_id=sprint_id,
         title=title,
-        description=str(payload.get("description", "")).strip(),
+        description=clean_text(payload.get("description", ""), "Task description"),
         assignee_id=assignee_id,
         reporter_id=reporter_id,
-        priority=payload.get("priority", "P2"),
-        status=payload.get("status", "Backlog"),
+        priority=clean_choice(payload.get("priority"), "priority", allowed=TASK_PRIORITIES, default="P2"),
+        status=clean_choice(payload.get("status"), "status", allowed=TASK_STATUSES, default="Backlog"),
         tags=", ".join(tags),
-        due_date=str(payload.get("due_date", "")).strip(),
+        due_date=clean_date(payload.get("due_date", ""), "due_date"),
     )
     db.add(task)
     db.commit()
     db.refresh(task)
-    comment = str(payload.get("comment", "")).strip()
+    comment = clean_text(payload.get("comment", ""), "Comment", max_length=4000)
     if comment:
         db.add(
             Comment(
@@ -304,14 +448,25 @@ def patch_task(
     task = db.get(Task, task_id)
     if not task:
         raise HTTPException(404, "Task not found")
-    for field in ["title", "description", "assignee_id", "reporter_id", "priority", "status", "due_date"]:
-        if field in payload:
-            setattr(task, field, payload[field])
+    if "title" in payload:
+        task.title = clean_text(payload["title"], "Task title", required=True, max_length=200)
+    if "description" in payload:
+        task.description = clean_text(payload["description"], "Task description")
+    if "assignee_id" in payload:
+        task.assignee_id = clean_text(payload["assignee_id"], "Assignee", required=True, max_length=120)
+    if "reporter_id" in payload:
+        task.reporter_id = clean_text(payload["reporter_id"], "Reporter", required=True, max_length=120)
+    if "priority" in payload:
+        task.priority = clean_choice(payload["priority"], "priority", allowed=TASK_PRIORITIES, default=task.priority)
+    if "status" in payload:
+        task.status = clean_choice(payload["status"], "status", allowed=TASK_STATUSES, default=task.status)
+    if "due_date" in payload:
+        task.due_date = clean_date(payload["due_date"], "due_date")
     if "tags" in payload:
         task.tags = parse_tags(payload["tags"])
     if "sprint_id" in payload:
-        sprint_id = payload["sprint_id"]
-        task.sprint_id = int(sprint_id) if sprint_id not in (None, "", "null") else None
+        sprint_id = clean_optional_int(payload["sprint_id"], "sprint_id")
+        task.sprint_id = validate_sprint(task.project_id, sprint_id, db)
     task.updated_at = now_iso()
     db.add(task)
     db.commit()
@@ -331,15 +486,13 @@ def add_comment(
     task = db.get(Task, task_id)
     if not task:
         raise HTTPException(404, "Task not found")
-    content = str(payload.get("content", "")).strip()
-    if not content:
-        raise HTTPException(400, "Comment content is required")
-    author_id = str(payload.get("author_id", os.getenv("RELAY_HUMAN_ID", "human")))
+    content = clean_text(payload.get("content"), "Comment content", required=True, max_length=4000)
+    author_id = clean_text(payload.get("author_id", os.getenv("RELAY_HUMAN_ID", "human")), "Author", max_length=120)
     db.add(
         Comment(
             task_id=task_id,
             author_id=author_id,
-            author_type=payload.get("author_type", "human"),
+            author_type=clean_choice(payload.get("author_type"), "author_type", allowed=COMMENT_AUTHOR_TYPES, default="human"),
             content=content,
         )
     )
@@ -379,14 +532,14 @@ def create_sprint(
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
     api_owner(x_api_key, db)
-    name = str(payload.get("name", "")).strip()
-    if not name:
-        raise HTTPException(400, "Sprint name is required")
+    project_id = clean_required_int(payload.get("project_id"), "project_id")
+    require_project(project_id, db)
+    name = clean_text(payload.get("name"), "Sprint name", required=True, max_length=160)
     sprint = Sprint(
-        project_id=int(payload["project_id"]),
+        project_id=project_id,
         name=name,
-        start_date=str(payload.get("start_date", "")).strip(),
-        end_date=str(payload.get("end_date", "")).strip(),
+        start_date=clean_date(payload.get("start_date", ""), "start_date"),
+        end_date=clean_date(payload.get("end_date", ""), "end_date"),
     )
     db.add(sprint)
     db.commit()
