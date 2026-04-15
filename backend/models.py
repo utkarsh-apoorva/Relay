@@ -76,5 +76,6 @@ class ApiKey(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     agent_id: Mapped[str] = mapped_column(String)
-    key: Mapped[str] = mapped_column(String, unique=True)
+    key: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True, default=None)
+    key_hash: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True, default=None)
     created_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
