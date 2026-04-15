@@ -1,7 +1,13 @@
-export const getApiKey = () => localStorage.getItem('relay_api_key') || import.meta.env.VITE_RELAY_API_KEY || ''
+const STORAGE_KEY = 'relay_api_key'
+
+export const getApiKey = () => sessionStorage.getItem(STORAGE_KEY) || ''
 
 export const setApiKey = (value) => {
-  localStorage.setItem('relay_api_key', value)
+  if (value) {
+    sessionStorage.setItem(STORAGE_KEY, value)
+    return
+  }
+  sessionStorage.removeItem(STORAGE_KEY)
 }
 
 export const api = async (path, opts = {}) => {
