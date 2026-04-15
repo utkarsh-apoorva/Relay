@@ -11,6 +11,8 @@ const VIEWS = [
   ['agents', 'Agents'],
   ['usage', 'Usage'],
 ]
+const HUMAN_ID = import.meta.env.VITE_RELAY_HUMAN_ID || 'human'
+const HUMAN_NAME = import.meta.env.VITE_RELAY_HUMAN_NAME || 'Human'
 
 const blankTask = (projectId = '', sprintId = '') => ({
   id: null,
@@ -377,11 +379,13 @@ export default function App() {
         <div className="panel">
           <div className="panel-title">API key</div>
           <input
+            type="password"
             value={apiKey}
             onChange={(e) => setApiKeyState(e.target.value)}
             spellCheck="false"
+            autoComplete="off"
           />
-          <div className="muted">Default: frontend/.env</div>
+          <div className="muted">Stored only for this browser session. Not bundled into the frontend.</div>
         </div>
 
         <div className="nav">
@@ -866,7 +870,7 @@ export default function App() {
               </Field>
               <Field label="Lead agent">
                 <select value={projectDraft.lead_agent_id} onChange={(e) => setProjectDraft((current) => ({ ...current, lead_agent_id: e.target.value }))}>
-                  <option 
+                  <option value="">Unassigned</option>
                   {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
                 </select>
               </Field>
