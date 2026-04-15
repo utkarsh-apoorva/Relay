@@ -14,9 +14,10 @@ python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 
 # Frontend
 cd frontend
-cp .env.example .env        # fill in your API key
+cp .env.example .env
 npm install --legacy-peer-deps
 npm run dev
+# then enter your API key in the UI
 ```
 
 - Frontend: http://localhost:3000
@@ -25,17 +26,18 @@ npm run dev
 
 ## Configuration
 
-All identity and API key configuration lives in `.env` files (gitignored). See `.env.example` and `frontend/.env.example` for the full list of variables.
+Backend identity, API key, and CORS configuration lives in `.env` files (gitignored). The frontend should not bundle secrets. Enter the API key in the UI, where it is stored in session storage only.
 
 Key variables:
 
 | Variable | Description |
 |---|---|
+| `RELAY_CORS_ORIGINS` | Comma-separated allowed origins for the API |
 | `RELAY_HUMAN_ID` | ID for the human owner (used in approval queue) |
 | `RELAY_HUMAN_KEY` | API key for the human |
 | `RELAY_AGENT_N_ID` | ID for agent N |
 | `RELAY_AGENT_N_KEY` | API key for agent N |
-| `VITE_RELAY_API_KEY` | Frontend API key |
+| `RELAY_ENV` | Set to `production` to disable FastAPI docs |
 
 ## Features
 
