@@ -5,6 +5,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from .models import Agent, ApiKey, Project, Sprint, Task
+from .security import hash_api_key
 
 
 def load_local_env() -> None:
@@ -109,8 +110,20 @@ def ensure_task(db, project_id, sprint_id, title, description, assignee_id, repo
 
 
 def ensure_key(db: Session, agent_id: str, key: str) -> None:
-    if not db.query(ApiKey).filter(ApiKey.key == key).first():
-        db.add(ApiKey(agent_id=agent_id, key=key))
+    key_hash = hash_api_key(key)
+    existing = db.query(ApiKey).filter(ApiKey.key_hash == key_hash).first()
+    if existing:
+        if existing.key:
+            existing.key = None
+            db.add(existing)
+        return
+    legacy = db.query(ApiKey).filter(ApiKey.key == key).first()
+    if legacy:
+        legacy.key_hash = key_hash
+        legacy.key = None
+        db.add(legacy)
+        return
+    db.add(ApiKey(agent_id=agent_id, key=None, key_hash=key_hash))
 
 
 def seed_from_env(db: Session) -> None:
