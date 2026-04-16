@@ -137,6 +137,11 @@ export default function App() {
     }
   }
 
+  const submitApiKey = async (event) => {
+    event.preventDefault()
+    await load()
+  }
+
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -376,7 +381,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="panel">
+        <form className="panel" onSubmit={submitApiKey}>
           <div className="panel-title">API key</div>
           <input
             type="password"
@@ -386,7 +391,8 @@ export default function App() {
             autoComplete="off"
           />
           <div className="muted">Stored only for this browser session. Not bundled into the frontend.</div>
-        </div>
+          <button className="primary-button" type="submit">Connect</button>
+        </form>
 
         <div className="nav">
           {VIEWS.map(([id, label]) => (
