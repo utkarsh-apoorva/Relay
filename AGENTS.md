@@ -42,3 +42,24 @@ When reporting back:
 1. What you did (files changed, commands run)
 2. What's the current state (passing/failing, deployed/local)
 3. What's next (if anything needs human attention)
+
+---
+
+## Shared Knowledge (read every session)
+
+### 1. The Vault — Shared Knowledge Base
+All work, context, and reference material lives here:
+```
+/Users/utkarsh-openclaw/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault 1.0/
+```
+- Start with `INDEX.md` at the Vault root — it has a quick-reference table and links to every folder
+- Each folder has its own `INDEX.md` with clickable links to all files inside
+- This is a personal wiki. When you need domain context — go read the Vault. Do not guess.
+
+### 2. Shared Tools
+Shared tools available to all agents on this host:
+```
+~/.openclaw/shared/TOOLS.md
+```
+Read this to know what tools are installed and how to use them (e.g., voice transcription via whisper-cli).
+
