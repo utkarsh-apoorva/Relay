@@ -9,7 +9,8 @@ from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
@@ -637,3 +638,16 @@ def approval_queue(
     _human_id = os.getenv("RELAY_HUMAN_ID", "human")
     tasks = db.query(Task).filter(Task.assignee_id == _human_id).order_by(Task.updated_at.desc()).all()
     return [serialize_task(task, db) for task in tasks]
+
+
+# ── Static frontend (production) ─────────────────────────────────────────────
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if _FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        # Let /api/* fall through (handled above); serve index.html for everything else
+        index = _FRONTEND_DIST / "index.html"
+        return FileResponse(index)
