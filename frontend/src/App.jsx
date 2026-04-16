@@ -89,6 +89,7 @@ export default function App() {
   const [usage, setUsage] = useState({ rows: [], totals: [] })
   const [error, setError] = useState('')
   const [apiKey, setApiKeyState] = useState(getApiKey())
+  const [apiKeyCollapsed, setApiKeyCollapsed] = useState(false)
   const [projectId, setProjectId] = useState('')
   const [sprintId, setSprintId] = useState('')
   const [calendarScope, setCalendarScope] = useState('all')
@@ -132,6 +133,7 @@ export default function App() {
       if (calendarScope !== 'all' && !projectRows.some((project) => String(project.id) === String(calendarScope))) {
         setCalendarScope('all')
       }
+      if (getApiKey().trim()) setApiKeyCollapsed(true)
     } catch (err) {
       setError(err.message || String(err))
     }
@@ -381,18 +383,24 @@ export default function App() {
           </div>
         </div>
 
-        <form className="panel" onSubmit={submitApiKey}>
-          <div className="panel-title">API key</div>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKeyState(e.target.value)}
-            spellCheck="false"
-            autoComplete="off"
-          />
-          <div className="muted">Stored only for this browser session. Not bundled into the frontend.</div>
-          <button className="primary-button" type="submit">Connect</button>
-        </form>
+        {apiKeyCollapsed ? (
+          <button className="panel api-key-toggle" onClick={() => setApiKeyCollapsed(false)} type="button">
+            {'API Key > '}
+          </button>
+        ) : (
+          <form className="panel" onSubmit={submitApiKey}>
+            <div className="panel-title">API key</div>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKeyState(e.target.value)}
+              spellCheck="false"
+              autoComplete="off"
+            />
+            <div className="muted">Stored only for this browser session. Not bundled into the frontend.</div>
+            <button className="primary-button" type="submit">Connect</button>
+          </form>
+        )}
 
         <div className="nav">
           {VIEWS.map(([id, label]) => (
