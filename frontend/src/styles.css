@@ -140,6 +140,22 @@ textarea:focus {
   padding: 14px;
 }
 
+.api-key-toggle {
+  width: 100%;
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+  display: block;
+  font: inherit;
+  padding: 14px;
+  text-align: left;
+}
+
+.api-key-toggle:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
+}
+
 .card {
   padding: 16px;
 }
@@ -167,7 +183,8 @@ textarea:focus {
 .primary-button,
 .secondary-button,
 .danger-button,
-.icon-button {
+.icon-button,
+.api-key-toggle {
   border: 1px solid transparent;
   border-radius: 14px;
   transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
@@ -179,7 +196,8 @@ textarea:focus {
 .primary-button:hover,
 .secondary-button:hover,
 .danger-button:hover,
-.icon-button:hover {
+.icon-button:hover,
+.api-key-toggle:hover {
   transform: translateY(-1px);
 }
 
