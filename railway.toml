@@ -1,24 +1,7 @@
-[build]
-builder = "nixpacks"
-
-[[services]]
-name = "backend"
-source = "backend"
-
-[services.build]
-buildCommand = "pip install -r requirements.txt"
-
-[services.deploy]
-startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 30
-
-[[services]]
-name = "frontend"
-source = "frontend"
-
-[services.build]
-buildCommand = "npm ci && npm run build"
-
-[services.deploy]
-startCommand = "npx serve dist --listen $PORT"
+# This file is intentionally minimal.
+# Railway services are configured per-directory via nixpacks.toml:
+#   backend/ → backend/nixpacks.toml
+#   frontend/ → frontend/nixpacks.toml
+#
+# In Railway dashboard: create two services from the same repo,
+# set "Root Directory" to "backend" on one and "frontend" on the other.
