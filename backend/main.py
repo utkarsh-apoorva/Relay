@@ -283,6 +283,15 @@ def health() -> dict[str, str]:
     return {"ok": "true"}
 
 
+@app.get("/agents.txt", include_in_schema=False)
+def agents_txt():
+    from fastapi.responses import PlainTextResponse
+    agents_file = Path(__file__).resolve().parent.parent / "agents.txt"
+    if not agents_file.exists():
+        return PlainTextResponse("agents.txt not found", status_code=404)
+    return PlainTextResponse(agents_file.read_text())
+
+
 @app.get("/api/projects")
 def list_projects(
     db: Session = Depends(get_db),
