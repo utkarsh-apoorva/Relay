@@ -8,5 +8,6 @@ __pycache__/
 frontend/.env
 memory/
 skills/
-memory/
-skills/
+.venv/
+backend/.venv/
+*.egg-info/
