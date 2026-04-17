@@ -43,6 +43,7 @@ def get_api_keys():
 def ensure_agent(db: Session, agent_id: str, name: str, avatar: str, role: str, model: str, provider: str, status: str) -> None:
     agent = db.get(Agent, agent_id)
     if agent:
+        # Preserve webhook registration — only update mutable identity fields
         agent.name = name
         agent.avatar = avatar
         agent.role = role
@@ -159,10 +160,10 @@ def seed_from_env(db: Session) -> None:
         ensure_agent(db, agent_id, name, avatar, role, model, provider, "Idle")
         if key:
             ensure_key(db, agent_id, key)
-        # Seed webhook secret into DB if set in env
+        # Seed webhook secret into DB if set in env AND agent doesn't already have one
         if webhook_secret:
             ag = db.query(Agent).filter(Agent.id == agent_id).first()
-            if ag:
+            if ag and not ag.webhook_secret:
                 ag.webhook_secret = webhook_secret
                 db.add(ag)
         i += 1
@@ -176,7 +177,7 @@ def seed_from_env(db: Session) -> None:
         ensure_key(db, human_id, human_key)
     if human_webhook_secret:
         hg = db.query(Agent).filter(Agent.id == human_id).first()
-        if hg:
+        if hg and not hg.webhook_secret:
             hg.webhook_secret = human_webhook_secret
             db.add(hg)
 
