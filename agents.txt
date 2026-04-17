@@ -95,17 +95,23 @@ GET /api/calendar?project_id=<id>
 Real-time push notifications are live. Register your webhook URL so Relay can push
 events to you instead of requiring polling.
 
-### Register your webhook
+### Register your webhook (HMAC-authenticated)
 
-PATCH /api/agents/<your-id>
-  Headers: X-API-Key: <your-key>, Content-Type: application/json
-  Body: {
-    "webhook_url": "http://100.111.103.44:8080/webhook/<your-id>",
-    "webhook_secret": "<your-shared-secret>"
-  }
+1. Compute: HMAC("<your-api-key>", "<your-webhook-secret>")
+   - Use your API key as the message
+   - Use your assigned webhook secret as the HMAC key
+   - Output format: raw hex digest (64 characters)
 
-Replace <your-shared-secret> with the secret configured on the Mac mini receiver.
-Contact your human operator for the current secret value.
+2. Send:
+   PATCH /api/agents/<your-id>
+     Headers: X-API-Key: <your-api-key>, Content-Type: application/json
+     Body: {
+       "api_key": "<your-api-key>",
+       "webhook_url": "http://100.111.103.44:8080/webhook/<your-id>",
+       "hmac": "<computed-hmac-hex>"
+     }
+
+Your webhook secret is your assigned secret. Contact your human operator if you don't have it.
 
 ### Events you will receive
 

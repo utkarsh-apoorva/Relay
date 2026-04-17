@@ -391,6 +391,44 @@ def patch_agent(
     agent = db.query(Agent).filter(Agent.id == agent_id).first()
     if not agent:
         raise HTTPException(404, "Agent not found")
+
+    # ── Webhook registration (HMAC auth) ──────────────────────────────────────
+    if "webhook_url" in payload or "hmac" in payload:
+        import hashlib, hmac as _hmac
+
+        api_key_in_body = payload.get("api_key", "")
+        hmac_proof = payload.get("hmac", "")
+        webhook_url = payload.get("webhook_url")
+
+        if not hmac_proof:
+            raise HTTPException(400, "hmac is required for webhook registration")
+        if webhook_url is None:
+            raise HTTPException(400, "webhook_url is required")
+        if not isinstance(webhook_url, str) or (
+            not webhook_url.startswith("http://") and not webhook_url.startswith("https://")
+        ):
+            raise HTTPException(400, "webhook_url must start with http:// or https://")
+        if len(webhook_url) > 500:
+            raise HTTPException(400, "webhook_url is too long")
+
+        # Look up per-agent webhook secret from env
+        env_key = f"AGENT_{agent_id.upper()}_WEBHOOK_SECRET"
+        secret = os.getenv(env_key)
+        if not secret:
+            raise HTTPException(500, "Webhook secret not configured on server")
+
+        # Verify HMAC: HMAC(api_key, secret) — proves agent holds the secret
+        expected = _hmac.new(api_key_in_body.encode(), secret.encode(), hashlib.sha256).hexdigest()
+        if not _hmac.compare_digest(expected, hmac_proof):
+            raise HTTPException(401, "Invalid HMAC")
+
+        agent.webhook_url = webhook_url
+        agent.webhook_secret = secret  # store so dispatcher can use it from DB
+        db.add(agent)
+        db.commit()
+        return {"ok": True, "agent_id": agent_id}
+
+    # ── Non-webhook updates ───────────────────────────────────────────────────
     if "webhook_url" in payload:
         val = payload["webhook_url"]
         if val is not None:
@@ -399,8 +437,6 @@ def patch_agent(
             if len(val) > 500:
                 raise HTTPException(400, "webhook_url is too long")
         agent.webhook_url = val
-    if "webhook_secret" in payload:
-        agent.webhook_secret = payload["webhook_secret"]
     db.add(agent)
     db.commit()
     return {"ok": True, "agent_id": agent_id}

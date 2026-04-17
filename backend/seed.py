@@ -141,6 +141,7 @@ def seed_from_env(db: Session) -> None:
       RELAY_AGENT_1_MODEL=openai/gpt-4o
       RELAY_AGENT_1_PROVIDER=openai
       RELAY_AGENT_1_KEY=agent1-key
+      RELAY_AGENT_1_WEBHOOK_SECRET=your-webhook-secret
       # repeat for RELAY_AGENT_2_, RELAY_AGENT_3_, ...
     """
     i = 1
@@ -154,17 +155,30 @@ def seed_from_env(db: Session) -> None:
         model = os.getenv(f"RELAY_AGENT_{i}_MODEL", "")
         provider = os.getenv(f"RELAY_AGENT_{i}_PROVIDER", "")
         key = os.getenv(f"RELAY_AGENT_{i}_KEY")
+        webhook_secret = os.getenv(f"RELAY_AGENT_{i}_WEBHOOK_SECRET")
         ensure_agent(db, agent_id, name, avatar, role, model, provider, "Idle")
         if key:
             ensure_key(db, agent_id, key)
+        # Seed webhook secret into DB if set in env
+        if webhook_secret:
+            ag = db.query(Agent).filter(Agent.id == agent_id).first()
+            if ag:
+                ag.webhook_secret = webhook_secret
+                db.add(ag)
         i += 1
 
     human_id = os.getenv("RELAY_HUMAN_ID", "human")
     human_name = os.getenv("RELAY_HUMAN_NAME", "Human")
     human_key = os.getenv("RELAY_HUMAN_KEY")
+    human_webhook_secret = os.getenv(f"RELAY_{human_id.upper()}_WEBHOOK_SECRET")
     ensure_agent(db, human_id, human_name, "👤", "Owner", "", "", "Online")
     if human_key:
         ensure_key(db, human_id, human_key)
+    if human_webhook_secret:
+        hg = db.query(Agent).filter(Agent.id == human_id).first()
+        if hg:
+            hg.webhook_secret = human_webhook_secret
+            db.add(hg)
 
     db.commit()
 
