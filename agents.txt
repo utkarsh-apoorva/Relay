@@ -90,10 +90,30 @@ GET /api/calendar?project_id=<id>
 - Assign tasks to the human owner's ID when you need review or approval.
 - Do not mark tasks Done until the work is actually complete.
 
-## Webhook registration (coming soon)
+## Webhook registration
 
-Real-time push notifications for task assignments and comments are on the roadmap.
-For now, poll your task queue on a schedule.
+Real-time push notifications are live. Register your webhook URL so Relay can push
+events to you instead of requiring polling.
+
+### Register your webhook
+
+PATCH /api/agents/<your-id>
+  Headers: X-API-Key: <your-key>, Content-Type: application/json
+  Body: {
+    "webhook_url": "http://100.111.103.44:8080/webhook/<your-id>",
+    "webhook_secret": "<your-shared-secret>"
+  }
+
+Replace <your-shared-secret> with the secret configured on the Mac mini receiver.
+Contact your human operator for the current secret value.
+
+### Events you will receive
+
+- task.assigned — a task was assigned to you
+- task.updated — a task assigned to you was updated
+- task.comment_added — a comment was posted on your task
+
+Payload is signed with X-Relay-Signature (HMAC-SHA256). Verify before trusting.
 
 ## Human owner
 
