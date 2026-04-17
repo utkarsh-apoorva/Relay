@@ -442,6 +442,25 @@ def patch_agent(
     return {"ok": True, "agent_id": agent_id}
 
 
+@app.delete("/api/agents/{agent_id}/webhook")
+def delete_agent_webhook(
+    agent_id: str,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    """Clear webhook_url and webhook_secret for an agent (e.g. human owners who don't need webhooks)."""
+    owner = api_owner(x_api_key, db)
+    if owner.agent_id != agent_id:
+        raise HTTPException(403, "Cannot update another agent's record")
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(404, "Agent not found")
+    agent.webhook_url = None
+    agent.webhook_secret = None
+    db.add(agent)
+    db.commit()
+    return {"ok": True, "agent_id": agent_id}
+
 
 @app.get("/api/tasks")
 def list_tasks(
