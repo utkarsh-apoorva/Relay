@@ -417,8 +417,8 @@ def patch_agent(
         if not secret:
             raise HTTPException(500, "Webhook secret not configured on server")
 
-        # Verify HMAC: HMAC(api_key, secret) — proves agent holds the secret
-        expected = _hmac.new(api_key_in_body.encode(), secret.encode(), hashlib.sha256).hexdigest()
+        # Verify HMAC: HMAC(secret, api_key) — same direction as dispatcher uses
+        expected = _hmac.new(secret.encode(), api_key_in_body.encode(), hashlib.sha256).hexdigest()
         if not _hmac.compare_digest(expected, hmac_proof):
             raise HTTPException(401, "Invalid HMAC")
 
