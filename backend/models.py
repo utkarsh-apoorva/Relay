@@ -18,6 +18,8 @@ class Agent(Base):
     provider: Mapped[str] = mapped_column(String, default="")
     status: Mapped[str] = mapped_column(String, default="Idle")
     last_active: Mapped[str] = mapped_column(String, default="")
+    webhook_url: Mapped[Optional[str]] = mapped_column(String, nullable=True, default=None)
+    webhook_secret: Mapped[Optional[str]] = mapped_column(String, nullable=True, default=None)
 
 
 class Project(Base):

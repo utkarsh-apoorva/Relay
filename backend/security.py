@@ -48,6 +48,16 @@ def migrate_api_keys(db: Session) -> None:
         db.commit()
 
 
+def migrate_agent_webhooks(engine):
+    with engine.connect() as conn:
+        for col in ("webhook_url", "webhook_secret"):
+            try:
+                conn.execute(text(f"ALTER TABLE agents ADD COLUMN {col} TEXT"))
+                conn.commit()
+            except Exception:
+                pass  # column already exists
+
+
 def lookup_api_key(db: Session, raw: str) -> Optional[ApiKey]:
     hashed = hash_api_key(raw)
     api_key = db.query(ApiKey).filter(ApiKey.key_hash == hashed).first()

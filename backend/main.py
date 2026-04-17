@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
 from .models import Agent, ApiKey, Comment, Project, Sprint, Task
-from .security import ensure_api_key_storage, hash_api_key, lookup_api_key, migrate_api_keys
+from .security import ensure_api_key_storage, hash_api_key, lookup_api_key, migrate_api_keys, migrate_agent_webhooks
+from .dispatcher import fire
 from .seed import seed
 
 DEFAULT_API_ORIGINS = [
@@ -109,6 +110,7 @@ ensure_api_key_storage(engine)
 with SessionLocal() as db:
     seed(db)
     migrate_api_keys(db)
+migrate_agent_webhooks(engine)
 
 
 def now_iso() -> str:
@@ -376,6 +378,35 @@ def list_agents(
     return result
 
 
+@app.patch("/api/agents/{agent_id}")
+def patch_agent(
+    agent_id: str,
+    payload: dict,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    owner = api_owner(x_api_key, db)
+    if owner.agent_id != agent_id:
+        raise HTTPException(403, "Cannot update another agent's record")
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(404, "Agent not found")
+    if "webhook_url" in payload:
+        val = payload["webhook_url"]
+        if val is not None:
+            if not isinstance(val, str) or (not val.startswith("http://") and not val.startswith("https://")):
+                raise HTTPException(400, "webhook_url must start with http:// or https://")
+            if len(val) > 500:
+                raise HTTPException(400, "webhook_url is too long")
+        agent.webhook_url = val
+    if "webhook_secret" in payload:
+        agent.webhook_secret = payload["webhook_secret"]
+    db.add(agent)
+    db.commit()
+    return {"ok": True, "agent_id": agent_id}
+
+
+
 @app.get("/api/tasks")
 def list_tasks(
     project_id: Optional[int] = None,
@@ -432,6 +463,13 @@ def create_task(
     db.add(task)
     db.commit()
     db.refresh(task)
+    if task.assignee_id:
+        _agent = db.query(Agent).filter(Agent.id == task.assignee_id).first()
+        if _agent and _agent.webhook_url and _agent.webhook_secret:
+            fire(_agent.webhook_url, _agent.webhook_secret, {
+                "event": "task.assigned",
+                "task": serialize_task(task, db),
+            })
     comment = clean_text(payload.get("comment", ""), "Comment", max_length=4000)
     if comment:
         db.add(
@@ -481,6 +519,12 @@ def patch_task(
     db.add(task)
     db.commit()
     db.refresh(task)
+    _agent = db.query(Agent).filter(Agent.id == task.assignee_id).first()
+    if _agent and _agent.webhook_url and _agent.webhook_secret:
+        fire(_agent.webhook_url, _agent.webhook_secret, {
+            "event": "task.updated",
+            "task": serialize_task(task, db),
+        })
     touch_project(task.project_id, db)
     return serialize_task(task, db)
 
@@ -509,6 +553,15 @@ def add_comment(
     task.updated_at = now_iso()
     db.add(task)
     db.commit()
+    _task = db.get(Task, task_id)
+    if _task:
+        _agent = db.query(Agent).filter(Agent.id == _task.assignee_id).first()
+        if _agent and _agent.webhook_url and _agent.webhook_secret:
+            fire(_agent.webhook_url, _agent.webhook_secret, {
+                "event": "task.comment_added",
+                "task_id": task_id,
+                "comment": {"author_id": author_id, "content": content},
+            })
     touch_project(task.project_id, db)
     return {"ok": True}
 
