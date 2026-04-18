@@ -20,8 +20,14 @@
         <string>https://relay-production-c472.up.railway.app</string>
         <key>GATEWAY_URL</key>
         <string>http://127.0.0.1:18789</string>
+        <key>GATEWAY_TOKEN</key>
+        <string>ea1232957dd82307ede065427325e93d02c2d97dd51774c0</string>
+        <key>RELAY_HUMAN_CHAT_ID</key>
+        <string>8636971702</string>
+        <key>RELAY_AGENTS</key>
+        <string>[{"id":"linus","name":"Linus","api_key":"linus-key"},{"id":"main","name":"Gandalf","api_key":"gandalf-key"},{"id":"clay","name":"Clay","api_key":"clay-key"},{"id":"ive","name":"Ive","api_key":"ive-key"},{"id":"thanos","name":"Thanos","api_key":"thanos-key"}]</string>
         <key>POLL_INTERVAL</key>
-        <string>300</string>
+        <string>120</string>
         <key>STATE_FILE</key>
         <string>/Users/utkarsh-openclaw/.openclaw/relay-poller-state.json</string>
     </dict>

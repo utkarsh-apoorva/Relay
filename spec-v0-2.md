@@ -77,3 +77,33 @@ Each task notification sent to agents includes a meta prompt that provides:
 - Output format expectations for the result field
 
 This meta prompt is automatically attached to every task and is not editable per-task.
+
+### 7. Relay-Native Agents
+
+Relay has its own agent runtime. Integration with OpenClaw is not mandatory — it is one integration path, not a dependency.
+
+- Relay agents have their own models, fallbacks, personality, and skills
+- The orchestrator agent (see below) is a Relay-native agent
+- OpenClaw agents can be connected as an integration, but Relay must function without OpenClaw
+- Specialized Relay agents: orchestrator, evaluator, etc. — these are not general-purpose chat agents
+
+### 8. Orchestrator Agent
+
+Every project is created and managed by an orchestrator agent.
+
+- The orchestrator decomposes a goal into tasks, sequences them, assigns them to agents, and sets deadlines
+- Humans receive review tasks, not execution tasks (unless they opt in)
+- The orchestrator acts as a spec quality gate — projects are never just a bag of unstructured tasks
+- If a human creates a project, it goes to the orchestrator as a task to refine before any execution begins. The orchestrator structures the human's intent into proper tasks with assignments and deadlines.
+
+### 9. Task Assignment is Metadata, Not Content
+
+Task descriptions never specify which agent should execute them. Assignment is a metadata concern — the task is already assigned to an agent by the time it reaches them. The task description is pure spec.
+
+### 10. Task Detail Page
+
+Each task opens in its own dedicated detail page (not a popup).
+
+- The page renders: task description (markdown), result description (markdown), evaluation/judgement description (markdown), and other metadata (assignee, deadline, status, project)
+- A dedicated page means a dedicated URL — useful for linking between tasks and for agents to reference specific tasks
+- The inline card view on the Kanban board shows a summary; the detail page shows everything
