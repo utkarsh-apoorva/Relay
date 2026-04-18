@@ -35,6 +35,10 @@ MAX_DESCRIPTION_WORDS = 500
 MAX_TITLE_WORDS = 200
 META_PROMPT_VERSION = "1.0"
 META_PROMPT_DIRECTIVE = "Call GET /api/meta before creating or modifying any project or task."
+META_PROMPT_TEMPLATE = os.getenv(
+    "RELAY_META_PROMPT_TEMPLATE",
+    "You are {agent_name}. Before creating any project or task, call GET /api/meta to understand the current rules and schema. Always validate payloads against the rules in /api/meta before submitting.",
+)
 RATE_LIMIT_REQUESTS = max(1, int(os.getenv("RELAY_RATE_LIMIT_REQUESTS", "120")))
 RATE_LIMIT_WINDOW_SECONDS = max(1, int(os.getenv("RELAY_RATE_LIMIT_WINDOW_SECONDS", "60")))
 MAX_BODY_BYTES = max(1024, int(os.getenv("RELAY_MAX_BODY_BYTES", "1048576")))
@@ -347,52 +351,68 @@ def meta_schema(
     db: Session = Depends(get_db),
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
-    """Return the creation schema — agents use this to self-correct on validation failure."""
+    """Return the full system meta — schema, rules, agent registry, meta prompt.
+
+    Agents call this before any project/task creation to self-correct.
+    """
     api_owner(x_api_key, db)
     meta_url = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
+
+    # ── 1. Project creation schema ───────────────────────────────────────────
+    project_schema = {
+        "required_fields": ["name"],
+        "field_limits": {
+            "name": "160 chars",
+            "description": "5000 chars",
+        },
+        "validation_rules": [
+            {"field": "name", "rule": "required, 1-160 chars", "error_code": "MISSING_REQUIRED_FIELDS"},
+            {"field": "description", "rule": "optional, max 5000 chars", "error_code": "FIELD_TOO_LONG"},
+        ],
+    }
+
+    # ── 2. Task decomposition rules ─────────────────────────────────────────
+    task_rules = {
+        "atomic": "One task = one unit of work, completable in one agent turn",
+        "max_description_words": MAX_DESCRIPTION_WORDS,
+        "assignee": "exactly one assignee_id, no lists or multi-ID strings",
+        "must_include_eval_brief": "Every task description should include acceptance criteria / eval brief",
+        "validation_rules": [
+            {"field": "description", "rule": f"max {MAX_DESCRIPTION_WORDS} words", "error_code": "DESCRIPTION_TOO_LONG"},
+            {"field": "assignee_id", "rule": "exactly one agent ID, no commas/pipes/spaces", "error_code": "INVALID_ASSIGNEE"},
+            {"field": "project_id", "rule": "required, must reference an existing project", "error_code": "INVALID_PROJECT"},
+        ],
+    }
+
+    # ── 3. Agent registry — dynamically from DB ────────────────────────────
+    agents = db.query(Agent).order_by(Agent.name.asc()).all()
+    agent_registry = [
+        {
+            "id": agent.id,
+            "name": agent.name,
+            "role": agent.role,
+            "model": agent.model,
+            "provider": agent.provider,
+            "status": agent.status,
+        }
+        for agent in agents
+    ]
+
+    # ── 4. Current meta prompt template ──────────────────────────────────────
+    meta_prompt = {
+        "version": META_PROMPT_VERSION,
+        "directive": META_PROMPT_DIRECTIVE,
+        "template": META_PROMPT_TEMPLATE,
+    }
+
     return {
         "schema_version": "1.0",
-        "endpoints": {
-            "task.create": {
-                "description": "Create a task within a project",
-                "rules": [
-                    {
-                        "field": "description",
-                        "rule": f"max {MAX_DESCRIPTION_WORDS} words",
-                        "error_code": "DESCRIPTION_TOO_LONG",
-                    },
-                    {
-                        "field": "assignee_id",
-                        "rule": "exactly one assignee ID, no lists",
-                        "error_code": "INVALID_ASSIGNEE",
-                    },
-                    {
-                        "field": "project_id",
-                        "rule": "required, must exist",
-                        "error_code": "INVALID_PROJECT",
-                    },
-                ],
-                "example": {
-                    "title": "Fix login bug",
-                    "description": "Users cannot log in with Google OAuth. Investigate the redirect URI mismatch.",
-                    "assignee_id": "linus",
-                    "project_id": 1,
-                    "priority": "P1",
-                    "status": "Backlog",
-                },
-            },
-            "project.create": {
-                "description": "Create a new project",
-                "required_fields": ["name"],
-                "field_limits": {
-                    "name": "160 chars",
-                    "description": "5000 chars",
-                },
-                "error_code": "PROJECT_SCHEMA_VIOLATION",
-            },
-        },
-        "self_correct": True,
         "meta_url": meta_url,
+        "project_schema": project_schema,
+        "task_decomposition_rules": task_rules,
+        "agent_registry": agent_registry,
+        "meta_prompt": meta_prompt,
+        "self_correct": True,
     }
 
 
