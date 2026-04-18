@@ -39,6 +39,7 @@ Every project gets a wiki page. This is the first thing agents read when assigne
 | Task Description | Creator (AI or human) | The spec. What needs to be done, with all context needed to execute. Markdown in, rendered out. |
 | Result Description | Executor AI | The output. What was done, what was found, what was delivered. Markdown in, rendered out. |
 | Judgement | Evaluating AI | Assessment of the work. Quality, completeness, issues. Markdown in, rendered out. |
+| Eval Brief | Orchestrator | How this task will be evaluated. Acceptance criteria, test cases, expected output. Markdown in, rendered out. |
 | Comments | Humans only | Human annotations, questions, or feedback. AI agents never add comments. |
 
 ### 4. Agent Editing Rules
@@ -55,6 +56,8 @@ AI agents may only edit three fields:
 3. **Judgement** — append with attribution, same format as result description.
 
 Agents never add comments. Comments are for humans only.
+
+The orchestrator writes the eval brief for each task. Evaluating agents should reference the eval brief when writing their judgement.
 
 ### 5. Append Behavior
 
@@ -107,3 +110,41 @@ Each task opens in its own dedicated detail page (not a popup).
 - The page renders: task description (markdown), result description (markdown), evaluation/judgement description (markdown), and other metadata (assignee, deadline, status, project)
 - A dedicated page means a dedicated URL — useful for linking between tasks and for agents to reference specific tasks
 - The inline card view on the Kanban board shows a summary; the detail page shows everything
+
+### 11. Atomic Tasks
+
+Tasks must be atomic and assignable to exactly one agent in the system.
+
+- Task descriptions cannot exceed 500 words. If a task needs more, split it into multiple tasks with dependencies.
+- Each task has exactly one assignee — no shared ownership.
+- The 500-word limit forces clarity and prevents agents from receiving ambiguous mega-tasks.
+
+### 12. Eval Brief
+
+The orchestrator must create an eval brief for every task — a short description of how this task will be evaluated.
+
+- The eval brief could include: acceptance criteria, test cases, expected output format, or a simple pass/fail checklist.
+- This lives in the task as a separate field (not part of the task description).
+- Evaluating agents use the eval brief to write their judgement. Humans can read it to understand what "done" looks like.
+
+### 13. Project Creation UI
+
+The primary CTA on the project creation screen is "Start Orchestration" — not "Create Project."
+
+- This signals clearly that the human is providing intent, not structuring the project. The orchestrator does the structuring.
+- The human provides a brief (goal, context, constraints). The orchestrator decomposes it into tasks.
+- "Start Orchestration" sends the brief to the orchestrator as a task to refine and decompose.
+
+### 14. Meta API
+
+Relay exposes a `GET /api/meta` endpoint that provides the system's rules to any agent — internal or external.
+
+The endpoint returns:
+1. **Project creation schema** — what fields a project needs, what the orchestrator expects in the initial brief
+2. **Task decomposition rules** — atomic, max 500 words, single assignee, must include eval brief
+3. **Agent registry** — what agents exist in the system and their capabilities, so any orchestrator (internal or external) knows who to assign to
+4. **Current meta prompt template** — the same prompt attached to tasks, so any agent can self-educate before acting
+
+The meta prompt is served from the API, not hardcoded. When rules update, every agent gets the current version on next call. No stale prompts.
+
+This also enables external harness-based orchestrators: an external agent calls `GET /api/meta` first, learns the rules, then creates a project with a proper brief. The internal orchestrator picks it up and decomposes, OR the external agent decomposes itself using the rules from the meta endpoint.
