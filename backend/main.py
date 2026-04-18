@@ -178,6 +178,20 @@ def now_iso() -> str:
     return datetime.utcnow().isoformat()
 
 
+def build_task_webhook_payload(event: str, task: Task, db: Session) -> dict[str, Any]:
+    """Build rich webhook payload with task context, meta prompt, and direct link."""
+    task_url = f"{BASE_URL}/tasks/{task.id}" if BASE_URL else None
+    return {
+        "event": event,
+        "task": serialize_task(task, db),
+        "meta_prompt": {
+            "version": META_PROMPT_VERSION,
+            "directive": META_PROMPT_DIRECTIVE,
+        },
+        "task_url": task_url,
+    }
+
+
 def parse_tags(value: Any) -> str:
     if value is None:
         return ""
@@ -722,10 +736,7 @@ def create_task(
     if task.assignee_id:
         _agent = db.query(Agent).filter(Agent.id == task.assignee_id).first()
         if _agent and _agent.webhook_url and _agent.webhook_secret:
-            fire(_agent.webhook_url, _agent.webhook_secret, {
-                "event": "task.assigned",
-                "task": serialize_task(task, db),
-            })
+            fire(_agent.webhook_url, _agent.webhook_secret, build_task_webhook_payload("task.assigned", task, db))
     comment = clean_text(payload.get("comment", ""), "Comment", max_length=4000)
     if comment:
         db.add(
@@ -786,10 +797,7 @@ def patch_task(
     db.refresh(task)
     _agent = db.query(Agent).filter(Agent.id == task.assignee_id).first()
     if _agent and _agent.webhook_url and _agent.webhook_secret:
-        fire(_agent.webhook_url, _agent.webhook_secret, {
-            "event": "task.updated",
-            "task": serialize_task(task, db),
-        })
+        fire(_agent.webhook_url, _agent.webhook_secret, build_task_webhook_payload("task.updated", task, db))
     touch_project(task.project_id, db)
     return serialize_task(task, db)
 
