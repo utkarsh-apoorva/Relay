@@ -24,7 +24,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import requests
 
@@ -106,7 +106,7 @@ def task_summary(task: dict[str, Any]) -> str:
 
 # ── OpenClaw Gateway RPC ───────────────────────────────────────────────────────
 
-def gateway_rpc(method: str, params: dict) -> dict | None:
+def gateway_rpc(method: str, params: dict) -> Optional[dict]:
     """
     Send a JSON-RPC request to the OpenClaw gateway WebSocket HTTP endpoint.
     Uses the gateway's HTTP /rpc route.
