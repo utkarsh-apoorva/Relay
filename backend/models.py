@@ -81,3 +81,12 @@ class ApiKey(Base):
     key: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True, default=None)
     key_hash: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True, default=None)
     created_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
+
+
+class Wiki(Base):
+    __tablename__ = "wikis"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), unique=True)
+    content: Mapped[str] = mapped_column(Text, default="")
+    updated_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())

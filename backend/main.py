@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
-from .models import Agent, ApiKey, Comment, Project, Sprint, Task
+from .models import Agent, ApiKey, Comment, Project, Sprint, Task, Wiki
 from .security import ensure_api_key_storage, hash_api_key, lookup_api_key, migrate_api_keys, migrate_agent_webhooks
 from .dispatcher import fire
 from .seed import seed
@@ -481,6 +481,55 @@ def patch_project(
     db.commit()
     db.refresh(project)
     return serialize_project(project, db)
+
+
+@app.get("/api/projects/{project_id}/wiki")
+def get_project_wiki(
+    project_id: int,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    """Get the wiki for a project. Returns 404 if no wiki exists yet."""
+    api_owner(x_api_key, db)
+    require_project(project_id, db)
+    wiki = db.query(Wiki).filter(Wiki.project_id == project_id).first()
+    if not wiki:
+        raise HTTPException(404, "Wiki not found for this project")
+    return {
+        "id": wiki.id,
+        "project_id": wiki.project_id,
+        "content": wiki.content,
+        "updated_at": wiki.updated_at,
+    }
+
+
+@app.put("/api/projects/{project_id}/wiki")
+def put_project_wiki(
+    project_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    """Create or update the wiki for a project."""
+    api_owner(x_api_key, db)
+    require_project(project_id, db)
+    content = clean_text(payload.get("content", ""), "Wiki content", max_length=500000)
+    wiki = db.query(Wiki).filter(Wiki.project_id == project_id).first()
+    if wiki:
+        wiki.content = content
+        wiki.updated_at = now_iso()
+    else:
+        wiki = Wiki(project_id=project_id, content=content)
+        db.add(wiki)
+    db.commit()
+    db.refresh(wiki)
+    touch_project(project_id, db)
+    return {
+        "id": wiki.id,
+        "project_id": wiki.project_id,
+        "content": wiki.content,
+        "updated_at": wiki.updated_at,
+    }
 
 
 @app.get("/api/agents")
