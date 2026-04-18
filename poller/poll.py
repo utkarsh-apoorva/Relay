@@ -192,15 +192,17 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
             f"View in Relay: {RELAY_BASE_URL}"
         )
 
-        # Map agent_id to session key
-        session_key = f"agent:main:{agent_id}:telegram:direct"
+        # Map agent_id to the correct OpenClaw session key for Telegram direct
+        # Session key format: agent:{agent_id}:telegram:direct:{chat_id}
+        # chat_id is the human's Telegram ID (stored in RELAY_HUMAN_CHAT_ID)
+        chat_id = os.getenv("RELAY_HUMAN_CHAT_ID", "8636971702")
+        session_key = f"agent:{agent_id}:telegram:direct:{chat_id}"
         pushed = push_to_session(session_key, msg)
         if pushed:
             print(f"[relay-poller] Pushed task {task_id} to {agent_id} ({agent_name})")
         else:
-            # Try alternative session key formats
+            # Fallback: try without chat_id
             for alt in [
-                f"agent:main:{agent_id}",
                 f"agent:{agent_id}:telegram:direct",
                 f"agent:{agent_id}",
             ]:
