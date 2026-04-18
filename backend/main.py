@@ -46,6 +46,31 @@ IS_PRODUCTION = os.getenv("RELAY_ENV", "development").lower() == "production"
 REQUEST_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
 
 
+def migrate_task_field_columns(engine) -> None:
+    """Add task fields required by newer API versions when running on an older SQLite DB."""
+    if engine.url.get_backend_name() != "sqlite" or not engine.url.database:
+        return
+
+    import sqlite3
+
+    conn = sqlite3.connect(engine.url.database)
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(tasks)")
+        cols = {row[1] for row in cur.fetchall()}
+        required = {
+            "result_description": "TEXT DEFAULT ''",
+            "eval_brief": "TEXT DEFAULT ''",
+            "judgement": "TEXT DEFAULT ''",
+        }
+        for column, ddl in required.items():
+            if column not in cols:
+                cur.execute(f"ALTER TABLE tasks ADD COLUMN {column} {ddl}")
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def structured_error(code: str, message: str, status: int = 400) -> JSONResponse:
     """Return a machine-readable error with a meta pointer to /api/meta."""
     meta = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
@@ -167,6 +192,7 @@ async def harden_requests(request: Request, call_next):
     return response
 
 Base.metadata.create_all(bind=engine)
+migrate_task_field_columns(engine)
 ensure_api_key_storage(engine)
 with SessionLocal() as db:
     seed(db)
