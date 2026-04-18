@@ -20,6 +20,8 @@ class Agent(Base):
     last_active: Mapped[str] = mapped_column(String, default="")
     webhook_url: Mapped[Optional[str]] = mapped_column(String, nullable=True, default=None)
     webhook_secret: Mapped[Optional[str]] = mapped_column(String, nullable=True, default=None)
+    # Comma-separated capability tags, e.g. "coding,review,design"
+    capabilities: Mapped[str] = mapped_column(Text, default="")
 
 
 class Project(Base):
@@ -61,6 +63,8 @@ class Task(Base):
     result_description: Mapped[str] = mapped_column(Text, default="")
     eval_brief: Mapped[str] = mapped_column(Text, default="")
     judgement: Mapped[str] = mapped_column(Text, default="")
+    # Comma-separated task IDs this task depends on (smallest viable deps)
+    depends_on: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
 

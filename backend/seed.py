@@ -202,6 +202,18 @@ def seed_from_env(db: Session) -> None:
 
     db.commit()
 
+    # Ensure orchestrator agent exists
+    from .orchestrator import _ensure_columns, _ensure_orchestrator_agent, ORCHESTRATOR_ID, ORCHESTRATOR_NAME, ORCHESTRATOR_AVATAR, ORCHESTRATOR_ROLE
+    _ensure_columns()
+    _ensure_orchestrator_agent(db)
+
+    # Seed orchestrator API key if configured
+    orch_key = os.getenv("RELAY_ORCHESTRATOR_KEY")
+    if orch_key:
+        ensure_key(db, ORCHESTRATOR_ID, orch_key)
+
+    db.commit()
+
 
 def seed(db: Session):
     seed_from_env(db)
