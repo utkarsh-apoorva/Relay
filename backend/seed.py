@@ -127,6 +127,24 @@ def ensure_key(db: Session, agent_id: str, key: str) -> None:
     db.add(ApiKey(agent_id=agent_id, key=None, key_hash=key_hash))
 
 
+def handle_renames(db: Session) -> None:
+    """
+    Handle agent ID renames: if an old agent ID still exists in the DB but the
+    env now refers to it by a new ID (e.g. gandalf -> main), rename the row.
+    """
+    RENAMES = {"gandalf": "main"}
+    for old_id, new_id in RENAMES.items():
+        old_agent = db.query(Agent).filter(Agent.id == old_id).first()
+        if not old_agent:
+            continue
+        new_agent = db.query(Agent).filter(Agent.id == new_id).first()
+        if new_agent:
+            db.delete(old_agent)
+        else:
+            old_agent.id = new_id
+        db.flush()
+
+
 def seed_from_env(db: Session) -> None:
     """
     Seed agents and API keys from environment variables.
@@ -145,6 +163,7 @@ def seed_from_env(db: Session) -> None:
       RELAY_AGENT_1_WEBHOOK_SECRET=your-webhook-secret
       # repeat for RELAY_AGENT_2_, RELAY_AGENT_3_, ...
     """
+    handle_renames(db)
     i = 1
     while True:
         agent_id = os.getenv(f"RELAY_AGENT_{i}_ID")
