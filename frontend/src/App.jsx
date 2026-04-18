@@ -575,7 +575,7 @@ export default function App() {
                                 {...drag.draggableProps}
                                 {...drag.dragHandleProps}
                                 className={`task-card${task.result_description || task.judgement ? ' task-card--done' : ''}`}
-                                onClick={() => openTaskModal(task)}
+                                onClick={() => navigate(`/projects/${task.project_id}/tasks/${task.id}`)}
                               >
                                 {/* Title + priority */}
                                 <div className="row-between gap" style={{marginBottom: '6px'}}>

@@ -206,7 +206,6 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
             continue
 
         # New / unseen task
-        seen.add(task_id)
         new_count += 1
 
         summary = task_summary(task)
@@ -223,21 +222,22 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
         session_key = f"agent:{oc_id}:telegram:direct:{chat_id}"
         pushed = push_to_session(session_key, msg)
         if pushed:
-            print(f"[relay-poller] Pushed task {task_id} to {agent_id} ({agent_name})")
+            seen.add(task_id)
+            print(f"[relay-poller] Pushed task {task_id} to {oc_id} ({agent_name})")
             save_state(state)  # persist immediately to avoid re-sending on next poll
         else:
             # Fallback: try without chat_id
             for alt in [
-                f"agent:{agent_id}:telegram:direct",
-                f"agent:{agent_id}",
+                f"agent:{oc_id}:telegram:direct",
+                f"agent:{oc_id}",
             ]:
                 if push_to_session(alt, msg):
+                    seen.add(task_id)
                     print(f"[relay-poller] Pushed task {task_id} to {alt}")
                     save_state(state)
                     break
             else:
                 print(f"[relay-poller] WARN: could not push task {task_id} to {agent_id}", file=sys.stderr)
-                seen.discard(task_id)  # don't mark as seen since delivery failed
 
     if new_count == 0 and tasks:
         print(f"[relay-poller] {agent_id}: {len(tasks)} tasks, no new ones")

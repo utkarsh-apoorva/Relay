@@ -13,6 +13,7 @@
   --accent: #5865f2;
   --accent-2: #4752c4;
   --danger: #f23f42;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 body {
