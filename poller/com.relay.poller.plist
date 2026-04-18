@@ -11,7 +11,7 @@
         <string>/Users/utkarsh-openclaw/Developer/Code/Relay/poller/poll.py</string>
         <string>--daemon</string>
         <string>--interval</string>
-        <string>300</string>
+        <string>120</string>
     </array>
 
     <key>EnvironmentVariables</key>
@@ -26,6 +26,8 @@
         <string>8636971702</string>
         <key>RELAY_AGENTS</key>
         <string>[{"id":"linus","name":"Linus","api_key":"linus-key"},{"id":"main","name":"Gandalf","api_key":"gandalf-key"},{"id":"clay","name":"Clay","api_key":"clay-key"},{"id":"ive","name":"Ive","api_key":"ive-key"},{"id":"thanos","name":"Thanos","api_key":"thanos-key"}]</string>
+        <key>RELAY_TO_OPENCLAW_MAP</key>
+        <string>gandalf→main</string>
         <key>POLL_INTERVAL</key>
         <string>120</string>
         <key>STATE_FILE</key>

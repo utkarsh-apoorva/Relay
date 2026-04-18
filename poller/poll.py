@@ -36,6 +36,28 @@ GATEWAY_TOKEN = os.getenv("GATEWAY_TOKEN", "")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "300"))  # seconds
 STATE_FILE = Path(os.getenv("STATE_FILE", str(Path.home() / ".openclaw" / "relay-poller-state.json")))
 
+# Map from Relay agent IDs to OpenClaw agent IDs.
+# Gandalf in Relay = "main" in OpenClaw. Others are 1:1.
+_RELAY_TO_OC: dict[str, str] = {}
+def _parse_relay_to_oc() -> dict[str, str]:
+    raw = os.getenv("RELAY_TO_OPENCLAW_MAP", "")
+    if not raw:
+        return {}
+    m: dict[str, str] = {}
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if not pair or "→" not in pair:
+            continue
+        relay_id, oc_id = pair.split("→", 1)
+        m[relay_id.strip()] = oc_id.strip()
+    return m
+
+def relay_to_openclaw_id(relay_id: str) -> str:
+    """Map Relay agent ID to OpenClaw agent ID. Defaults to relay_id."""
+    if not _RELAY_TO_OC:
+        _RELAY_TO_OC.update(_parse_relay_to_oc())
+    return _RELAY_TO_OC.get(relay_id, relay_id)
+
 # Agent config: list of dicts with id, name, api_key
 # Loaded from RELAY_AGENTS env var as JSON, e.g.:
 #   [{"id": "linus", "name": "Linus", "api_key": "..."}, ...]
@@ -195,11 +217,10 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
             f"View in Relay: {RELAY_BASE_URL}"
         )
 
-        # Map agent_id to the correct OpenClaw session key for Telegram direct
-        # Session key format: agent:{agent_id}:telegram:direct:{chat_id}
-        # chat_id is the human's Telegram ID (stored in RELAY_HUMAN_CHAT_ID)
+        # Map Relay agent_id → OpenClaw session key
+        oc_id = relay_to_openclaw_id(agent_id)
         chat_id = os.getenv("RELAY_HUMAN_CHAT_ID", "8636971702")
-        session_key = f"agent:{agent_id}:telegram:direct:{chat_id}"
+        session_key = f"agent:{oc_id}:telegram:direct:{chat_id}"
         pushed = push_to_session(session_key, msg)
         if pushed:
             print(f"[relay-poller] Pushed task {task_id} to {agent_id} ({agent_name})")
