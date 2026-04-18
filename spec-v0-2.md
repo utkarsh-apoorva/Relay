@@ -148,3 +148,39 @@ The endpoint returns:
 The meta prompt is served from the API, not hardcoded. When rules update, every agent gets the current version on next call. No stale prompts.
 
 This also enables external harness-based orchestrators: an external agent calls `GET /api/meta` first, learns the rules, then creates a project with a proper brief. The internal orchestrator picks it up and decomposes, OR the external agent decomposes itself using the rules from the meta endpoint.
+
+### 15. Agent Registration Handshake
+
+When an agent registers with Relay, the registration response includes the meta endpoint URL and a directive to store it and use it on every subsequent interaction with Relay.
+
+- This is the proactive path — agents learn the rules before they act.
+- The registration response includes: meta endpoint URL, current version of the meta prompt, and a directive to call `/api/meta` before any project/task creation.
+- Agents are expected to cache this and reference it. But compliance is not assumed — validation (see below) is the enforcement layer.
+
+### 16. API Validation with Structured Errors
+
+Every API call that creates or modifies projects/tasks is validated against the system rules. If validation fails, Relay returns a structured, machine-parseable error.
+
+Error format:
+```json
+{
+  "error": "<machine_readable_code>",
+  "message": "<human and agent readable explanation>",
+  "meta": "GET /api/meta for full creation rules"
+}
+```
+
+Example:
+```json
+{
+  "error": "task_description_exceeds_limit",
+  "message": "Task description is 812 words. Maximum is 500. Split into multiple tasks.",
+  "meta": "GET /api/meta for full creation rules"
+}
+```
+
+Key properties:
+- Errors are consistent and machine-parseable — agents can programmatically correct their requests without guessing.
+- Every error includes a pointer to `/api/meta` so agents can self-correct without human intervention.
+- This is the reactive path — catches non-compliant agents that didn't read the manual, and makes Relay resilient to badly-behaved agents.
+- Validation is the enforcement layer. Registration is the education layer. Both are needed.
