@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.relay.poller</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/utkarsh-openclaw/Developer/Code/Relay/poller/poll.py</string>
+        <string>--daemon</string>
+        <string>--interval</string>
+        <string>300</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RELAY_BASE_URL</key>
+        <string>https://relay-production-c472.up.railway.app</string>
+        <key>GATEWAY_URL</key>
+        <string>http://127.0.0.1:18789</string>
+        <key>POLL_INTERVAL</key>
+        <string>300</string>
+        <key>STATE_FILE</key>
+        <string>/Users/utkarsh-openclaw/.openclaw/relay-poller-state.json</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/relay-poller.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/relay-poller.error.log</string>
+</dict>
+</plist>
