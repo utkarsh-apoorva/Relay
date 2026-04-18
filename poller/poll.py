@@ -166,12 +166,13 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
         if task_id is None:
             continue
         status = task.get("status", "")
-        # Skip Done and Rejected tasks
+        # Skip Done and Rejected tasks (removes stale state entries on next poll)
         if status in ("Done", "Rejected"):
             if task_id in seen:
                 seen.discard(task_id)
             continue
         if task_id in seen:
+            # Already notified this session — skip silently
             continue
 
         # New / unseen task
@@ -194,6 +195,7 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
         pushed = push_to_session(session_key, msg)
         if pushed:
             print(f"[relay-poller] Pushed task {task_id} to {agent_id} ({agent_name})")
+            save_state(state)  # persist immediately to avoid re-sending on next poll
         else:
             # Fallback: try without chat_id
             for alt in [
@@ -202,9 +204,11 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
             ]:
                 if push_to_session(alt, msg):
                     print(f"[relay-poller] Pushed task {task_id} to {alt}")
+                    save_state(state)
                     break
             else:
                 print(f"[relay-poller] WARN: could not push task {task_id} to {agent_id}", file=sys.stderr)
+                seen.discard(task_id)  # don't mark as seen since delivery failed
 
     if new_count == 0 and tasks:
         print(f"[relay-poller] {agent_id}: {len(tasks)} tasks, no new ones")
