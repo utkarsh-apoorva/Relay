@@ -633,6 +633,32 @@ textarea:focus {
   font-size: 0.85em;
 }
 
+/* Attribution block container (pre-processed) */
+.md-attribution-block {
+  border-left: 3px solid rgba(var(--agent-color-rgb, 124, 106, 255), 0.6);
+  padding-left: 14px;
+  margin-top: 1.5em;
+  border-radius: 0 6px 6px 0;
+}
+.md-attribution-block .md-attribution-heading {
+  background: rgba(var(--agent-color-rgb, 124, 106, 255), 0.08);
+  border-left: none;
+  margin: 0 -14px 0.5em -14px;
+  padding: 8px 14px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.md-attribution-block .md-attribution-agent {
+  font-weight: 600;
+  color: rgba(var(--agent-color-rgb, 124, 106, 255), 0.9);
+}
+.md-attribution-block .md-attribution-timestamp {
+  color: rgba(218,218,218,0.5);
+  font-size: 0.85em;
+}
+
 /* ── Kanban card summary view ───────────────────────────── */
 .task-card-title {
   font-size: 0.875rem;

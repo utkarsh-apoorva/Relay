@@ -153,13 +153,9 @@ export default function TaskDetailPage() {
           <div className="tdp-sidebar-card">
             <Field label="Assignee"><span style={{marginRight: 6}}>👤</span>{assignee}</Field>
             <Field label="Reporter">{task.reporter_name || task.reporter_id}</Field>
-            <Field label="Status"><span className="tdp-badge" style={{background: STATUS_COLORS[task.status] || '#4a4a55'}}>{task.status}</span></Field>
-            <Field label="Priority"><span className="tdp-badge" style={{background: PRIORITY_COLORS[task.priority] || '#4a4a55'}}>{task.priority}</span></Field>
             <Field label="Due date">{task.due_date || 'Not set'}</Field>
             <Field label="Sprint">{task.sprint_name || 'No sprint'}</Field>
             <Field label="Project">{project?.name}</Field>
-            <Field label="Created">{new Date(task.created_at).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</Field>
-            <Field label="Updated">{new Date(task.updated_at).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</Field>
             {task.tags && (
               <Field label="Tags">
                 <div className="tdp-tags">
@@ -169,6 +165,10 @@ export default function TaskDetailPage() {
                 </div>
               </Field>
             )}
+            <Field label="Status"><span className="tdp-badge" style={{background: STATUS_COLORS[task.status] || '#4a4a55'}}>{task.status}</span></Field>
+            <Field label="Priority"><span className="tdp-badge" style={{background: PRIORITY_COLORS[task.priority] || '#4a4a55'}}>{task.priority}</span></Field>
+            <Field label="Created">{new Date(task.created_at).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</Field>
+            <Field label="Updated">{new Date(task.updated_at).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</Field>
           </div>
         </aside>
       </div>

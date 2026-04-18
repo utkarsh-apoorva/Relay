@@ -596,10 +596,6 @@ export default function App() {
                                   </span>
                                   {/* Status dot */}
                                   <span className={`status-dot status-dot--${task.status.toLowerCase().replace(' ', '-')}"`} title={task.status} />
-                                  {/* Result/judgement indicator */}
-                                  {(task.result_description || task.judgement) && (
-                                    <span title="Has result or judgement">✓</span>
-                                  )}
                                 </div>
 
                                 {/* Description first line */}
@@ -608,6 +604,15 @@ export default function App() {
                                     {task.description.split('\n')[0].slice(0, 80)}
                                     {task.description.length > 80 ? '…' : ''}
                                   </p>
+                                )}
+
+                                {/* Content indicators */}
+                                {(task.result_description || task.judgement || task.eval_brief) && (
+                                  <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                                    {task.result_description && <span style={{color: '#2adfaa', fontSize: '0.75rem'}} title="Has result">✓ Result </span>}
+                                    {task.judgement && <span style={{color: '#7c6aff', fontSize: '0.75rem'}} title="Has judgement">✓ Judgement </span>}
+                                    {task.eval_brief && <span style={{color: '#fbbf24', fontSize: '0.75rem'}} title="Has eval brief">✓ Eval brief </span>}
+                                  </div>
                                 )}
                               </article>
                             )}
