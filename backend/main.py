@@ -26,14 +26,69 @@ DEFAULT_API_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
+BASE_URL = os.getenv("RELAY_BASE_URL", "").rstrip("/") or None
+
 TASK_STATUSES = {"Backlog", "To Do", "In Progress", "In Review", "Done", "Rejected"}
 TASK_PRIORITIES = {"P0", "P1", "P2", "P3"}
 COMMENT_AUTHOR_TYPES = {"human", "agent"}
+MAX_DESCRIPTION_WORDS = 500
+MAX_TITLE_WORDS = 200
 RATE_LIMIT_REQUESTS = max(1, int(os.getenv("RELAY_RATE_LIMIT_REQUESTS", "120")))
 RATE_LIMIT_WINDOW_SECONDS = max(1, int(os.getenv("RELAY_RATE_LIMIT_WINDOW_SECONDS", "60")))
 MAX_BODY_BYTES = max(1024, int(os.getenv("RELAY_MAX_BODY_BYTES", "1048576")))
 IS_PRODUCTION = os.getenv("RELAY_ENV", "development").lower() == "production"
 REQUEST_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
+
+
+def structured_error(code: str, message: str, status: int = 400) -> JSONResponse:
+    """Return a machine-readable error with a meta pointer to /api/meta."""
+    meta = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
+    return JSONResponse(
+        {"error": code, "message": message, "meta": meta},
+        status_code=status,
+    )
+
+
+def validate_description_words(text: str, field: str = "description") -> None:
+    """Raise if text exceeds MAX_DESCRIPTION_WORDS."""
+    count = len(text.split())
+    if count > MAX_DESCRIPTION_WORDS:
+        raise HTTPException(
+            400,
+            f"{field} exceeds {MAX_DESCRIPTION_WORDS} words (got {count})",
+        )
+
+
+def validate_single_assignee(assignee_id: Optional[str], field: str = "assignee_id") -> str:
+    """Raise if assignee is missing, empty, or contains multiple IDs."""
+    if not assignee_id:
+        raise HTTPException(400, f"{field} is required — task must have exactly one assignee")
+    # Reject comma-separated or pipe-separated lists
+    raw = str(assignee_id).strip()
+    if "," in raw or "|" in raw or " " in raw:
+        raise HTTPException(400, f"{field} must be exactly one agent ID, not multiple")
+    return raw
+
+
+def validate_project_brief(payload: dict, meta_url: str) -> None:
+    """Validate project creation payload against the schema at meta_url."""
+    required = ["name"]
+    missing = [f for f in required if f not in payload or not payload[f]]
+    if missing:
+        raise structured_error(
+            "MISSING_REQUIRED_FIELDS",
+            f"Project creation requires: {', '.join(missing)}. See {meta_url}",
+        )
+    if "name" in payload and len(str(payload["name"]).strip()) > 160:
+        raise structured_error(
+            "FIELD_TOO_LONG",
+            f"Project name must be 160 chars or fewer. See {meta_url}",
+        )
+    if "description" in payload and len(str(payload["description"])) > 5000:
+        raise structured_error(
+            "FIELD_TOO_LONG",
+            f"Project description must be 5000 chars or fewer. See {meta_url}",
+        )
 
 
 def get_cors_origins() -> list[str]:
@@ -285,6 +340,60 @@ def health() -> dict[str, str]:
     return {"ok": "true"}
 
 
+@app.get("/api/meta")
+def meta_schema(
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    """Return the creation schema — agents use this to self-correct on validation failure."""
+    api_owner(x_api_key, db)
+    meta_url = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
+    return {
+        "schema_version": "1.0",
+        "endpoints": {
+            "task.create": {
+                "description": "Create a task within a project",
+                "rules": [
+                    {
+                        "field": "description",
+                        "rule": f"max {MAX_DESCRIPTION_WORDS} words",
+                        "error_code": "DESCRIPTION_TOO_LONG",
+                    },
+                    {
+                        "field": "assignee_id",
+                        "rule": "exactly one assignee ID, no lists",
+                        "error_code": "INVALID_ASSIGNEE",
+                    },
+                    {
+                        "field": "project_id",
+                        "rule": "required, must exist",
+                        "error_code": "INVALID_PROJECT",
+                    },
+                ],
+                "example": {
+                    "title": "Fix login bug",
+                    "description": "Users cannot log in with Google OAuth. Investigate the redirect URI mismatch.",
+                    "assignee_id": "linus",
+                    "project_id": 1,
+                    "priority": "P1",
+                    "status": "Backlog",
+                },
+            },
+            "project.create": {
+                "description": "Create a new project",
+                "required_fields": ["name"],
+                "field_limits": {
+                    "name": "160 chars",
+                    "description": "5000 chars",
+                },
+                "error_code": "PROJECT_SCHEMA_VIOLATION",
+            },
+        },
+        "self_correct": True,
+        "meta_url": meta_url,
+    }
+
+
 @app.get("/agents.txt", include_in_schema=False)
 def agents_txt():
     from fastapi.responses import PlainTextResponse
@@ -310,6 +419,8 @@ def create_project(
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ):
     owner = api_owner(x_api_key, db)
+    meta_url = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
+    validate_project_brief(payload, meta_url)
     name = clean_text(payload.get("name"), "Project name", required=True, max_length=160)
     description = clean_text(payload.get("description", ""), "Project description")
     status = clean_text(payload.get("status", "Active"), "Project status", max_length=40) or "Active"
@@ -497,7 +608,11 @@ def create_task(
     project_id = clean_required_int(payload.get("project_id"), "project_id")
     require_project(project_id, db)
     reporter_id = clean_text(payload.get("reporter_id") or owner.agent_id or _human_id, "Reporter", max_length=120)
-    assignee_id = clean_text(payload.get("assignee_id") or reporter_id, "Assignee", max_length=120)
+    description = payload.get("description", "") or ""
+    if description:
+        validate_description_words(description, "Task description")
+    assignee_id_raw = payload.get("assignee_id") or reporter_id
+    assignee_id = validate_single_assignee(assignee_id_raw, "assignee_id")
     tags = [tag for tag in parse_tags(payload.get("tags")).split(", ") if tag]
     for tag in {owner.agent_id, reporter_id}:
         if tag and tag not in tags and tag != os.getenv("RELAY_HUMAN_ID", "human"):
@@ -554,9 +669,14 @@ def patch_task(
     if "title" in payload:
         task.title = clean_text(payload["title"], "Task title", required=True, max_length=200)
     if "description" in payload:
-        task.description = clean_text(payload["description"], "Task description")
+        desc = payload["description"] or ""
+        if desc:
+            validate_description_words(desc, "Task description")
+        task.description = clean_text(desc, "Task description")
     if "assignee_id" in payload:
-        task.assignee_id = clean_text(payload["assignee_id"], "Assignee", required=True, max_length=120)
+        task.assignee_id = validate_single_assignee(payload["assignee_id"], "assignee_id")
+    if "reporter_id" in payload:
+        task.reporter_id = clean_text(payload["reporter_id"], "Reporter", required=True, max_length=120)
     if "reporter_id" in payload:
         task.reporter_id = clean_text(payload["reporter_id"], "Reporter", required=True, max_length=120)
     if "priority" in payload:
