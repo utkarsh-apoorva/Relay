@@ -311,6 +311,9 @@ def serialize_task(task: Task, db: Session) -> dict[str, Any]:
         "status": task.status,
         "tags": task.tags,
         "due_date": task.due_date,
+        "result_description": task.result_description,
+        "eval_brief": task.eval_brief,
+        "judgement": task.judgement,
         "created_at": task.created_at,
         "updated_at": task.updated_at,
         "comments": serialize_comments(task.id, db),
@@ -711,6 +714,7 @@ def create_task(
         status=clean_choice(payload.get("status"), "status", allowed=TASK_STATUSES, default="Backlog"),
         tags=", ".join(tags),
         due_date=clean_date(payload.get("due_date", ""), "due_date"),
+        eval_brief=clean_text(payload.get("eval_brief", ""), "Eval brief", max_length=10000),
     )
     db.add(task)
     db.commit()
@@ -759,14 +763,18 @@ def patch_task(
         task.assignee_id = validate_single_assignee(payload["assignee_id"], "assignee_id")
     if "reporter_id" in payload:
         task.reporter_id = clean_text(payload["reporter_id"], "Reporter", required=True, max_length=120)
-    if "reporter_id" in payload:
-        task.reporter_id = clean_text(payload["reporter_id"], "Reporter", required=True, max_length=120)
     if "priority" in payload:
         task.priority = clean_choice(payload["priority"], "priority", allowed=TASK_PRIORITIES, default=task.priority)
     if "status" in payload:
         task.status = clean_choice(payload["status"], "status", allowed=TASK_STATUSES, default=task.status)
     if "due_date" in payload:
         task.due_date = clean_date(payload["due_date"], "due_date")
+    if "result_description" in payload:
+        task.result_description = clean_text(payload["result_description"], "result_description", max_length=10000)
+    if "eval_brief" in payload:
+        task.eval_brief = clean_text(payload["eval_brief"], "eval_brief", max_length=10000)
+    if "judgement" in payload:
+        task.judgement = clean_text(payload["judgement"], "judgement", max_length=10000)
     if "tags" in payload:
         task.tags = parse_tags(payload["tags"])
     if "sprint_id" in payload:
