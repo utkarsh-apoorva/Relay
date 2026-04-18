@@ -106,37 +106,32 @@ def task_summary(task: dict[str, Any]) -> str:
 
 # ── OpenClaw Gateway RPC ───────────────────────────────────────────────────────
 
-def gateway_rpc(method: str, params: dict) -> Optional[dict]:
+def gateway_invoke(tool: str, args: dict) -> Optional[dict]:
     """
-    Send a JSON-RPC request to the OpenClaw gateway WebSocket HTTP endpoint.
-    Uses the gateway's HTTP /rpc route.
+    Call the OpenClaw gateway /tools/invoke endpoint.
     """
     gw_url = GATEWAY_URL.rstrip("/")
-    # Try the HTTP RPC endpoint first
-    rpc_url = f"{gw_url}/rpc"
+    invoke_url = f"{gw_url}/tools/invoke"
     payload = {
-        "jsonrpc": "2.0",
-        "id": str(uuid.uuid4()),
-        "method": method,
-        "params": params,
+        "tool": tool,
+        "args": args,
     }
     try:
         resp = requests.post(
-            rpc_url,
+            invoke_url,
             json=payload,
             headers={
                 "Authorization": f"Bearer {GATEWAY_TOKEN}",
                 "Content-Type": "application/json",
             },
-            timeout=15,
+            timeout=30,
         )
         if resp.status_code == 200:
             return resp.json()
-        # Fallback: try as plain request (gateway may handle differently)
-        print(f"[relay-poller] gateway RPC {method} returned {resp.status_code}", file=sys.stderr)
+        print(f"[relay-poller] gateway invoke {tool} returned {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
         return None
     except requests.RequestException as e:
-        print(f"[relay-poller] gateway RPC error for {method}: {e}", file=sys.stderr)
+        print(f"[relay-poller] gateway invoke error for {tool}: {e}", file=sys.stderr)
         return None
 
 
@@ -145,10 +140,9 @@ def push_to_session(session_key: str, message: str) -> bool:
     Push a message to an OpenClaw agent session via sessions.send.
     Returns True on success.
     """
-    result = gateway_rpc("sessions.send", {
+    result = gateway_invoke("sessions_send", {
         "sessionKey": session_key,
         "message": message,
-        "role": "system",
     })
     if result and result.get("result"):
         return True
