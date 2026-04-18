@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
 import { api, getApiKey, setApiKey as saveApiKey } from './api/client'
+import MarkdownRenderer from './components/MarkdownRenderer'
 
 const COLUMNS = ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done']
 const VIEWS = [
@@ -572,19 +573,41 @@ export default function App() {
                                 ref={drag.innerRef}
                                 {...drag.draggableProps}
                                 {...drag.dragHandleProps}
-                                className="task-card"
+                                className={`task-card${task.result_description || task.judgement ? ' task-card--done' : ''}`}
                                 onClick={() => openTaskModal(task)}
                               >
-                                <div className="row-between gap">
-                                  <strong>{task.title}</strong>
+                                {/* Title + priority */}
+                                <div className="row-between gap" style={{marginBottom: '6px'}}>
+                                  <span className="task-card-title">{task.title}</span>
                                   <span className={`priority ${task.priority.toLowerCase()}`}>{task.priority}</span>
                                 </div>
-                                <div className="muted">{task.assignee_name || task.assignee_id}</div>
-                                <div className="muted">{task.project_name} · {task.sprint_name || 'No sprint'}</div>
-                                <div className="task-foot">
-                                  <span>{prettyDate(task.due_date)}</span>
-                                  <span>{task.comments?.length || 0} comments</span>
+
+                                {/* Assignee */}
+                                <div className="task-card-assignee">
+                                  <span className="avatar avatar--sm">
+                                    {(() => {
+                                      const p = people.find((x) => x.id === task.assignee_id);
+                                      return p?.avatar || '?';
+                                    })()}
+                                  </span>
+                                  <span className="muted" style={{fontSize: '0.8rem'}}>
+                                    {task.assignee_name || task.assignee_id || 'Unassigned'}
+                                  </span>
+                                  {/* Status dot */}
+                                  <span className={`status-dot status-dot--${task.status.toLowerCase().replace(' ', '-')}"`} title={task.status} />
+                                  {/* Result/judgement indicator */}
+                                  {(task.result_description || task.judgement) && (
+                                    <span title="Has result or judgement">✓</span>
+                                  )}
                                 </div>
+
+                                {/* Description first line */}
+                                {task.description && (
+                                  <p className="task-card-desc muted">
+                                    {task.description.split('\n')[0].slice(0, 80)}
+                                    {task.description.length > 80 ? '…' : ''}
+                                  </p>
+                                )}
                               </article>
                             )}
                           </Draggable>
