@@ -33,6 +33,8 @@ TASK_PRIORITIES = {"P0", "P1", "P2", "P3"}
 COMMENT_AUTHOR_TYPES = {"human", "agent"}
 MAX_DESCRIPTION_WORDS = 500
 MAX_TITLE_WORDS = 200
+META_PROMPT_VERSION = "1.0"
+META_PROMPT_DIRECTIVE = "Call GET /api/meta before creating or modifying any project or task."
 RATE_LIMIT_REQUESTS = max(1, int(os.getenv("RELAY_RATE_LIMIT_REQUESTS", "120")))
 RATE_LIMIT_WINDOW_SECONDS = max(1, int(os.getenv("RELAY_RATE_LIMIT_WINDOW_SECONDS", "60")))
 MAX_BODY_BYTES = max(1024, int(os.getenv("RELAY_MAX_BODY_BYTES", "1048576")))
@@ -484,6 +486,10 @@ def list_agents(
                 "last_active": agent.last_active,
                 "current_tasks": in_progress,
                 "total_tasks": len(tasks),
+                # ── Registration handshake (v0.2) ──
+                "meta_endpoint": f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta",
+                "meta_prompt_version": META_PROMPT_VERSION,
+                "meta_directive": META_PROMPT_DIRECTIVE,
             }
         )
     return result
@@ -550,7 +556,14 @@ def patch_agent(
         agent.webhook_url = val
     db.add(agent)
     db.commit()
-    return {"ok": True, "agent_id": agent_id}
+    meta_endpoint = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
+    return {
+        "ok": True,
+        "agent_id": agent_id,
+        "meta_endpoint": meta_endpoint,
+        "meta_prompt_version": META_PROMPT_VERSION,
+        "meta_directive": META_PROMPT_DIRECTIVE,
+    }
 
 
 @app.delete("/api/agents/{agent_id}/webhook")
