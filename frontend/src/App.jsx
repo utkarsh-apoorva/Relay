@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { api, getApiKey, setApiKey as saveApiKey } from './api/client'
 import MarkdownRenderer from './components/MarkdownRenderer'
 
@@ -83,6 +83,7 @@ function Field({ label, children, hint }) {
 }
 
 export default function App() {
+  const navigate = useNavigate()
   const [view, setView] = useState('projects')
   const [projects, setProjects] = useState([])
   const [agents, setAgents] = useState([])
@@ -226,8 +227,7 @@ export default function App() {
   const approvalCount = approvalTasks.length
 
   const openProjectModal = () => {
-    setProjectDraft(blankProject())
-    setProjectModalOpen(true)
+    navigate('/projects/new')
   }
 
   const openSprintModal = () => {
