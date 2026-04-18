@@ -30,7 +30,7 @@ Every project gets a wiki page. This is the first thing agents read when assigne
 
 **Current:** Click a card → popup opens → text boxes + comments.
 
-**New:** Task description and result description render inline on the card or in an expanded view (not a popup). Both accept markdown input and render it for human consumption.
+**New:** The Kanban card shows a summary (title, assignee, status, first line of description). Full markdown rendering of all fields happens on the dedicated task detail page (see Section 10).
 
 ### 3. Task Fields
 
@@ -44,7 +44,7 @@ Every project gets a wiki page. This is the first thing agents read when assigne
 
 ### 4. Agent Editing Rules
 
-AI agents may only edit three fields:
+AI agents may only edit four fields:
 
 1. **Task Description** — agents should NOT append to an existing task description. The task description is the spec. If the task needs to change, create a new task or subtask. The original ask stays intact.
 2. **Result Description** — append with attribution. Each agent adds a timestamped block:
@@ -54,6 +54,7 @@ AI agents may only edit three fields:
    ```
    No auto-summarization. Each agent adds their block. Full history preserved for audit trail and reasoning.
 3. **Judgement** — append with attribution, same format as result description.
+4. **Eval Brief** — written by the orchestrator only. Other agents may read the eval brief but must not modify it. Only the orchestrator edits this field.
 
 Agents never add comments. Comments are for humans only.
 
@@ -61,7 +62,7 @@ The orchestrator writes the eval brief for each task. Evaluating agents should r
 
 ### 5. Append Behavior
 
-When all three agent-editable fields already have content, agents append to the respective field with attribution blocks (see above).
+When all four agent-editable fields already have content, agents append to the respective field with attribution blocks (see above).
 
 **No automatic summarization.** Rationale:
 
@@ -79,7 +80,7 @@ Each task notification sent to agents includes a meta prompt that provides:
 - Execution rules (only edit task description, result description, judgement; never add comments)
 - Output format expectations for the result field
 
-This meta prompt is automatically attached to every task and is not editable per-task.
+The meta prompt is dynamically served from the `/api/meta` endpoint (see Section 14), attached to every task notification automatically, and is not editable per-task — the system controls it, not the task creator.
 
 ### 7. Relay-Native Agents
 
