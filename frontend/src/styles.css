@@ -566,3 +566,68 @@ textarea:focus {
     align-items: stretch;
   }
 }
+
+/* ── MarkdownRenderer ─────────────────────────────────────── */
+.md-content {
+  font-family: var(--font-body, Georgia, serif);
+  line-height: 1.7;
+  color: var(--text-primary, #dadada);
+}
+.md-content .md-h1,
+.md-content .md-h2,
+.md-content .md-h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-family: var(--font-display, sans-serif); }
+.md-content .md-h1 { font-size: 1.5rem; }
+.md-content .md-h2 { font-size: 1.25rem; }
+.md-content .md-h3 { font-size: 1.1rem; }
+.md-content .md-ul,
+.md-content .md-ol { padding-left: 1.5em; margin-bottom: 1em; }
+.md-content .md-li { margin-bottom: 0.3em; }
+.md-content .md-pre {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.md-content .md-inline-code {
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+  font-family: var(--font-mono, monospace);
+}
+.md-content .md-link { color: #7c6aff; text-decoration: underline; }
+.md-content .md-link:hover { color: #9b8dff; }
+.md-content .md-blockquote {
+  border-left: 3px solid rgba(124,106,255,0.4);
+  padding-left: 1em;
+  color: rgba(218,218,218,0.7);
+  margin-bottom: 1em;
+}
+.md-content .md-table-wrapper { overflow-x: auto; margin-bottom: 1em; }
+.md-content .md-table { border-collapse: collapse; width: 100%; }
+.md-content .md-th,
+.md-content .md-td { border: 1px solid rgba(255,255,255,0.1); padding: 6px 12px; text-align: left; }
+.md-content .md-th { background: rgba(255,255,255,0.04); }
+
+/* Attribution block: ## [Agent Name | Timestamp] */
+.md-content .md-attribution-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(124,106,255,0.08);
+  border-left: 3px solid rgba(124,106,255,0.5);
+  border-radius: 4px;
+  margin: 1em 0 0.5em;
+  font-size: 0.9rem;
+}
+.md-content .md-attribution-agent {
+  font-weight: 600;
+  color: #c4b5fd;
+}
+.md-content .md-attribution-timestamp {
+  color: rgba(218,218,218,0.5);
+  font-size: 0.85em;
+}
