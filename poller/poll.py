@@ -137,16 +137,24 @@ def gateway_invoke(tool: str, args: dict) -> Optional[dict]:
 
 def push_to_session(session_key: str, message: str) -> bool:
     """
-    Push a message to an OpenClaw agent session via sessions.send.
-    Returns True on success.
+    Spawn a fire-and-forget agent turn via sessions_spawn.
+    Returns True if the spawn succeeded (agent handles it asynchronously).
     """
-    result = gateway_invoke("sessions_send", {
-        "sessionKey": session_key,
-        "message": message,
+    # Extract agent_id from session key: agent:{agent_id}:telegram:direct:{chat_id}
+    parts = session_key.split(":")
+    agent_id = parts[1] if len(parts) > 1 else "unknown"
+
+    result = gateway_invoke("sessions_spawn", {
+        "runtime": "subagent",
+        "agentId": agent_id,
+        "mode": "run",
+        "cleanup": "delete",
+        "task": message,
+        "lightContext": True,
     })
     if result and result.get("result"):
         return True
-    print(f"[relay-poller] sessions.send failed for {session_key}: {result}", file=sys.stderr)
+    print(f"[relay-poller] sessions.spawn failed for {session_key}: {result}", file=sys.stderr)
     return False
 
 
