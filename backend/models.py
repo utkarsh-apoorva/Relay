@@ -58,6 +58,9 @@ class Task(Base):
     status: Mapped[str] = mapped_column(String, default="Backlog")
     tags: Mapped[str] = mapped_column(Text, default="")
     due_date: Mapped[str] = mapped_column(String, default="")
+    result_description: Mapped[str] = mapped_column(Text, default="")
+    eval_brief: Mapped[str] = mapped_column(Text, default="")
+    judgement: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
 
