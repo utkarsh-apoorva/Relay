@@ -1082,6 +1082,11 @@ textarea:focus {
   padding: 12px;
 }
 
+.project-task-card--dragging {
+  background: var(--panel-1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
 .project-task-title {
   margin: 8px 0;
   font-weight: 600;

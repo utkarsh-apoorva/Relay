@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 import { api } from '../api/client'
@@ -20,16 +21,27 @@ const STATUS_META = {
   Failed: { dot: 'status-dot failed', label: 'Failed' },
 }
 
-function TaskCard({ task, navigate }) {
+function DraggableTaskCard({ task, index, navigate }) {
   return (
-    <button className="project-task-card" onClick={() => navigate(`/projects/${task.project_id}/tasks/${task.id}`)} type="button">
-      <div className="row-between">
-        <strong>#{task.id}</strong>
-        <span className={`priority ${String(task.priority || 'P2').toLowerCase()}`}>{task.priority}</span>
-      </div>
-      <div className="project-task-title">{task.title}</div>
-      <div className="muted">{task.assignee_name || task.assignee_id || 'Unassigned'}</div>
-    </button>
+    <Draggable draggableId={String(task.id)} index={index}>
+      {(provided, snapshot) => (
+        <button
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`project-task-card${snapshot.isDragging ? ' project-task-card--dragging' : ''}`}
+          onClick={() => navigate(`/projects/${task.project_id}/tasks/${task.id}`)}
+          type="button"
+        >
+          <div className="row-between">
+            <strong>#{task.id}</strong>
+            <span className={`priority ${String(task.priority || 'P2').toLowerCase()}`}>{task.priority}</span>
+          </div>
+          <div className="project-task-title">{task.title}</div>
+          <div className="muted">{task.assignee_name || task.assignee_id || 'Unassigned'}</div>
+        </button>
+      )}
+    </Draggable>
   )
 }
 
@@ -73,6 +85,16 @@ export default function ProjectPage() {
     () => tasks.filter((task) => String(task.project_id) === String(projectId)),
     [tasks, projectId],
   )
+
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return
+    if (result.destination.droppableId === result.source.droppableId) return
+    await api(`/api/tasks/${Number(result.draggableId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: result.destination.droppableId }),
+    })
+    await load(false)
+  }
 
   useEffect(() => {
     if (!project) return undefined
@@ -218,24 +240,35 @@ export default function ProjectPage() {
         </div>
 
         {tab === 'kanban' ? (
-          <div className="project-board-grid">
-            {COLUMNS.map((column) => {
-              const columnTasks = projectTasks.filter((task) => task.status === column)
-              return (
-                <div className="project-board-column" key={column}>
-                  <div className="project-board-column-head">
-                    <strong>{column}</strong>
-                    <span>{columnTasks.length}</span>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="project-board-grid">
+              {COLUMNS.map((column) => {
+                const columnTasks = projectTasks.filter((task) => task.status === column)
+                return (
+                  <div className="project-board-column" key={column}>
+                    <div className="project-board-column-head">
+                      <strong>{column}</strong>
+                      <span>{columnTasks.length}</span>
+                    </div>
+                    <Droppable droppableId={column}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className="stack"
+                        >
+                          {columnTasks.length ? columnTasks.map((task, index) => (
+                            <DraggableTaskCard key={task.id} task={task} index={index} navigate={navigate} />
+                          )) : <div className="project-empty-state">No tasks yet.</div>}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
                   </div>
-                  <div className="stack">
-                    {columnTasks.length ? columnTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} navigate={navigate} />
-                    )) : <div className="project-empty-state">No tasks yet.</div>}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          </DragDropContext>
         ) : null}
 
         {tab === 'brief' ? (
