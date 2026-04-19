@@ -18,6 +18,7 @@ from .models import Agent, ApiKey, Comment, Project, Sprint, Task, Wiki
 from .security import ensure_api_key_storage, hash_api_key, lookup_api_key, migrate_api_keys, migrate_agent_webhooks
 from .dispatcher import fire
 from .seed import seed
+from .orchestrator import start_orchestrator as _start_orchestrator
 
 DEFAULT_API_ORIGINS = [
     "http://localhost:3000",
@@ -46,31 +47,6 @@ IS_PRODUCTION = os.getenv("RELAY_ENV", "development").lower() == "production"
 REQUEST_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
 
 
-def migrate_task_field_columns(engine) -> None:
-    """Add task fields required by newer API versions when running on an older SQLite DB."""
-    if engine.url.get_backend_name() != "sqlite" or not engine.url.database:
-        return
-
-    import sqlite3
-
-    conn = sqlite3.connect(engine.url.database)
-    try:
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(tasks)")
-        cols = {row[1] for row in cur.fetchall()}
-        required = {
-            "result_description": "TEXT DEFAULT ''",
-            "eval_brief": "TEXT DEFAULT ''",
-            "judgement": "TEXT DEFAULT ''",
-        }
-        for column, ddl in required.items():
-            if column not in cols:
-                cur.execute(f"ALTER TABLE tasks ADD COLUMN {column} {ddl}")
-        conn.commit()
-    finally:
-        conn.close()
-
-
 def structured_error(code: str, message: str, status: int = 400) -> JSONResponse:
     """Return a machine-readable error with a meta pointer to /api/meta."""
     meta = f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta"
@@ -81,23 +57,20 @@ def structured_error(code: str, message: str, status: int = 400) -> JSONResponse
 
 
 def validate_description_words(text: str, field: str = "description") -> None:
-    """Raise if text exceeds MAX_DESCRIPTION_WORDS."""
+    """Return a structured error if text exceeds MAX_DESCRIPTION_WORDS."""
     count = len(text.split())
     if count > MAX_DESCRIPTION_WORDS:
-        raise HTTPException(
-            400,
-            f"{field} exceeds {MAX_DESCRIPTION_WORDS} words (got {count})",
-        )
+        return structured_error("DESCRIPTION_TOO_LONG", f"{field.capitalize()} exceeds 500 words. Current: {count}")
 
 
 def validate_single_assignee(assignee_id: Optional[str], field: str = "assignee_id") -> str:
-    """Raise if assignee is missing, empty, or contains multiple IDs."""
+    """Return a structured error if assignee is missing, empty, or contains multiple IDs."""
     if not assignee_id:
-        raise HTTPException(400, f"{field} is required — task must have exactly one assignee")
+        return structured_error("INVALID_ASSIGNEE", "Assignee must be an active agent registered in Relay.")
     # Reject comma-separated or pipe-separated lists
     raw = str(assignee_id).strip()
     if "," in raw or "|" in raw or " " in raw:
-        raise HTTPException(400, f"{field} must be exactly one agent ID, not multiple")
+        return structured_error("INVALID_ASSIGNEE", "Assignee must be an active agent registered in Relay.")
     return raw
 
 
@@ -192,12 +165,16 @@ async def harden_requests(request: Request, call_next):
     return response
 
 Base.metadata.create_all(bind=engine)
-migrate_task_field_columns(engine)
 ensure_api_key_storage(engine)
 with SessionLocal() as db:
     seed(db)
     migrate_api_keys(db)
 migrate_agent_webhooks(engine)
+
+
+@app.on_event("startup")
+async def _on_startup():
+    _start_orchestrator()
 
 
 def now_iso() -> str:
@@ -354,6 +331,7 @@ def serialize_task(task: Task, db: Session) -> dict[str, Any]:
         "result_description": task.result_description,
         "eval_brief": task.eval_brief,
         "judgement": task.judgement,
+        "depends_on": task.depends_on,
         "created_at": task.created_at,
         "updated_at": task.updated_at,
         "comments": serialize_comments(task.id, db),
@@ -598,6 +576,7 @@ def list_agents(
                 "last_active": agent.last_active,
                 "current_tasks": in_progress,
                 "total_tasks": len(tasks),
+                "capabilities": [c.strip() for c in (agent.capabilities.split(",") if agent.capabilities else []) if c.strip()],
                 # ── Registration handshake (v0.2) ──
                 "meta_endpoint": f"{BASE_URL}/api/meta" if BASE_URL else "/api/meta",
                 "meta_prompt_version": META_PROMPT_VERSION,
@@ -755,6 +734,7 @@ def create_task(
         tags=", ".join(tags),
         due_date=clean_date(payload.get("due_date", ""), "due_date"),
         eval_brief=clean_text(payload.get("eval_brief", ""), "Eval brief", max_length=10000),
+        depends_on=clean_text(payload.get("depends_on", ""), "depends_on", max_length=500),
     )
     db.add(task)
     db.commit()
@@ -817,6 +797,8 @@ def patch_task(
     if "sprint_id" in payload:
         sprint_id = clean_optional_int(payload["sprint_id"], "sprint_id")
         task.sprint_id = validate_sprint(task.project_id, sprint_id, db)
+    if "depends_on" in payload:
+        task.depends_on = clean_text(payload["depends_on"], "depends_on", max_length=500)
     task.updated_at = now_iso()
     db.add(task)
     db.commit()

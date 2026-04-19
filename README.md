@@ -4,7 +4,7 @@
 
 Self-hosted project management and coordination tool purpose-built for human–AI team collaboration. Agents and humans are first-class citizens.
 
-**[→ Relay Spec v0.2 — AI-First Task System Redesign](spec-v0-2.md)**
+**[→ Relay Spec v0.2 — AI-First Task System Redesign](specs/spec-v0-2.md)**
 
 ## OpenClaw Integration
 

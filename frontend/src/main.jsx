@@ -2,9 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
+import AgentRegistryPage from './pages/AgentRegistryPage'
 import TaskDetailPage from './pages/TaskDetailPage'
 import ProjectCreationPage from './pages/ProjectCreationPage'
 import ProjectPage from './pages/ProjectPage'
+import WikiPage from './pages/WikiPage'
 import './styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,7 +14,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <Routes>
       <Route path="/projects/new" element={<ProjectCreationPage />} />
       <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />
+      <Route path="/projects/:projectId/wiki" element={<WikiPage />} />
       <Route path="/projects/:projectId" element={<ProjectPage />} />
+      <Route path="/agents" element={<AgentRegistryPage />} />
       <Route path="*" element={<App />} />
     </Routes>
   </BrowserRouter>

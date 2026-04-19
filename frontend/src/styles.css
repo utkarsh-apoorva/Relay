@@ -633,6 +633,32 @@ textarea:focus {
   font-size: 0.85em;
 }
 
+/* Attribution block container (pre-processed) */
+.md-attribution-block {
+  border-left: 3px solid rgba(var(--agent-color-rgb, 124, 106, 255), 0.6);
+  padding-left: 14px;
+  margin-top: 1.5em;
+  border-radius: 0 6px 6px 0;
+}
+.md-attribution-block .md-attribution-heading {
+  background: rgba(var(--agent-color-rgb, 124, 106, 255), 0.08);
+  border-left: none;
+  margin: 0 -14px 0.5em -14px;
+  padding: 8px 14px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.md-attribution-block .md-attribution-agent {
+  font-weight: 600;
+  color: rgba(var(--agent-color-rgb, 124, 106, 255), 0.9);
+}
+.md-attribution-block .md-attribution-timestamp {
+  color: rgba(218,218,218,0.5);
+  font-size: 0.85em;
+}
+
 /* ── Kanban card summary view ───────────────────────────── */
 .task-card-title {
   font-size: 0.875rem;
@@ -745,8 +771,32 @@ textarea:focus {
   .tdp-body { grid-template-columns: 1fr; }
   .tdp-sidebar { order: -1; }
 }
-.tdp-section {
-  margin-bottom: 32px;
+.tdp-section-view { position: relative; }
+.tdp-section { position: relative; margin-bottom: 32px; }
+.tdp-section-edit-btn {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  background: none;
+  border: none;
+  color: #4a4a55;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tdp-section-edit-btn:hover { color: #7c6aff; background: rgba(124,106,255,0.1); }
+.tdp-edit-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+.tdp-section-edit-mode { margin-bottom: 16px; }
+.tdp-field-error {
+  color: #fca5a5;
+  font-size: 0.8rem;
+  margin: 6px 0 0;
 }
 .tdp-section-title {
   font-size: 0.75rem;
@@ -1007,6 +1057,47 @@ textarea:focus {
   gap: 16px;
 }
 
+.orchestrator-banner--working {
+  background: rgba(124, 106, 255, 0.08);
+  border: 1px solid rgba(124, 106, 255, 0.2);
+  color: #c4b5fd;
+}
+
+.orchestrator-banner--ready {
+  background: rgba(42, 223, 170, 0.08);
+  border: 1px solid rgba(42, 223, 170, 0.2);
+}
+
+.orchestrator-banner--failed {
+  background: rgba(240, 82, 82, 0.08);
+  border: 1px solid rgba(240, 82, 82, 0.2);
+  color: #fca5a5;
+}
+
+
+.orchestrator-banner__title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.orchestrator-banner__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.orchestrator-spinner {
+  display: inline-block;
+  animation: spinIcon 1.5s linear infinite;
+}
+
+@keyframes spinIcon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .orchestrator-banner.working {
   background: rgba(124, 106, 255, 0.08);
   border: 1px solid rgba(124, 106, 255, 0.2);
@@ -1054,6 +1145,11 @@ textarea:focus {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
+}
+
+.project-task-card--dragging {
+  background: var(--panel-1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
 
 .project-task-title {
@@ -1112,4 +1208,264 @@ textarea:focus {
   .project-stat-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.wiki-layout { max-width: 900px; margin: 0 auto; padding: 24px; }
+.wiki-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.wiki-back {
+  background: none;
+  border: none;
+  color: #7c6aff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+}
+.wiki-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #dadada;
+  margin: 0;
+  flex: 1;
+}
+.wiki-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wiki-updated {
+  font-size: 0.75rem;
+  color: #4a4a55;
+}
+.wiki-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: #8b8b99;
+}
+.wiki-empty p { margin: 0 0 8px; }
+.wiki-empty-sub { font-size: 0.875rem; margin-bottom: 24px; }
+.wiki-editor { margin-top: 16px; }
+.wiki-content { margin-top: 16px; }
+.wiki-loading { padding: 48px; text-align: center; color: #8b8b99; }
+
+/* ── MarkdownEditor ─────────────────────────────────────── */
+.md-editor {
+  border: 1px solid #2a2a30;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #161618;
+}
+.md-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+.md-editor-toolbar-left {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+  padding-right: 8px;
+}
+.md-editor-toolbar-left::-webkit-scrollbar { display: none; }
+.md-editor-btn {
+  background: transparent;
+  border: none;
+  color: #949ba4;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.md-editor-btn:hover  { background: rgba(255,255,255,0.06); }
+.md-editor-btn:active { background: rgba(255,255,255,0.10); }
+.md-editor-toggle {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+}
+.md-editor-toggle button {
+  background: transparent;
+  border: none;
+  color: #4a4a55;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.md-editor-toggle button.active {
+  color: #dadada;
+  border-bottom-color: #7c6aff;
+}
+.md-editor-toggle button:hover { color: #8b8b99; }
+.md-editor-textarea {
+  width: 100%;
+  background: #161618;
+  border: none;
+  border-radius: 0;
+  color: #dadada;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: 12px 14px;
+  resize: vertical;
+  outline: none;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+.md-editor-textarea::placeholder { color: #4a4a55; font-style: italic; }
+.md-editor-textarea:focus { border-color: #7c6aff; }
+.md-editor-preview {
+  padding: 12px 14px;
+  min-height: 80px;
+}
+
+/* ── Agent Registry Page ────────────────────────────────── */
+.agent-registry {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.agent-registry__header {
+  margin-bottom: 32px;
+}
+.agent-registry__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #dadada;
+  margin: 0 0 8px;
+}
+.agent-registry__subtitle {
+  font-size: 0.875rem;
+  color: #8b8b99;
+}
+.agent-registry__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.agent-registry__filters {
+  display: flex;
+  gap: 4px;
+}
+.agent-registry__search {
+  width: 240px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 0.875rem;
+}
+.agent-registry__search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
+  outline: none;
+}
+.agent-registry__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.agent-card {
+  background: #161618;
+  border: 1px solid #2a2a30;
+  border-radius: 12px;
+  padding: 16px;
+}
+.agent-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.agent-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(124,106,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.agent-card__info {
+  flex: 1;
+  min-width: 0;
+}
+.agent-card__name {
+  font-weight: 600;
+  color: #dadada;
+  font-size: 0.95rem;
+}
+.agent-card__role {
+  font-size: 0.8rem;
+  color: #8b8b99;
+}
+.agent-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #8b8b99;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.agent-card__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.agent-card__model {
+  font-size: 0.8rem;
+  color: #8b8b99;
+  margin-bottom: 8px;
+}
+.agent-card__capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.agent-card__capability {
+  background: rgba(124,106,255,0.1);
+  color: #c4b5fd;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+}
+.agent-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #8b8b99;
+  margin-top: 10px;
+}
+.agent-card__last-active {
+  margin-left: auto;
+}
+.agent-registry-loading {
+  padding: 48px;
+  text-align: center;
+  color: #8b8b99;
+}
+.agent-registry-empty {
+  text-align: center;
+  padding: 48px;
+  color: #8b8b99;
 }
