@@ -96,6 +96,18 @@ export default function ProjectPage() {
     await load(false)
   }
 
+  const handleRetryOrchestration = async () => {
+    try {
+      await api(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'Orchestrating' }),
+      })
+      await load(false)
+    } catch (err) {
+      setError(err.message || 'Failed to retry orchestration')
+    }
+  }
+
   useEffect(() => {
     if (!project) return undefined
     if (!['Orchestrating', 'Re-orchestrating'].includes(project.status)) return undefined
@@ -193,21 +205,22 @@ export default function ProjectPage() {
             ))}
           </div>
 
-          <div className={`orchestrator-banner ${bannerMode}`}>
+          <div className={`orchestrator-banner orchestrator-banner--${bannerMode}`}>
             {bannerMode === 'working' ? (
               <>
                 <div>
-                  <div className="orchestrator-banner-title">🔄 {project.lead_agent_name || project.lead_agent_id || 'Orchestrator'} is decomposing your brief into tasks...</div>
+                  <div className="orchestrator-banner__title">
+                    <span className="orchestrator-spinner">🔄</span> {project.lead_agent_name || project.lead_agent_id || 'Orchestrator'} is decomposing your brief into tasks...
+                  </div>
                   <div className="muted">This usually takes 30–90 seconds. New tasks will appear below as they are created.</div>
                 </div>
-                <button className="ghost-button" onClick={() => navigate('/')} type="button">Back</button>
               </>
             ) : null}
 
             {bannerMode === 'ready' ? (
               <>
                 <div>
-                  <div className="orchestrator-banner-title">✅ Project is ready</div>
+                  <div className="orchestrator-banner__title">✅ Project is ready</div>
                   <div className="muted">The orchestration kickoff task has been created. Review the brief and task plan below.</div>
                 </div>
                 <button className="ghost-button" onClick={() => setTab('brief')} type="button">View Brief</button>
@@ -217,10 +230,13 @@ export default function ProjectPage() {
             {bannerMode === 'failed' ? (
               <>
                 <div>
-                  <div className="orchestrator-banner-title">⚠️ Orchestration failed</div>
-                  <div className="muted">The project was created but the orchestration kickoff did not complete cleanly.</div>
+                  <div className="orchestrator-banner__title">⚠️ Orchestration failed</div>
+                  <div className="muted">The orchestrator encountered an error while decomposing your brief.</div>
                 </div>
-                <button className="ghost-button" onClick={() => navigate('/projects/new')} type="button">Try Again</button>
+                <div className="orchestrator-banner__actions">
+                  <button className="secondary-button" onClick={handleRetryOrchestration} type="button">Retry</button>
+                  <button className="ghost-button" onClick={() => navigate(`/projects/${projectId}/edit`)} type="button">Edit Brief</button>
+                </div>
               </>
             ) : null}
           </div>
