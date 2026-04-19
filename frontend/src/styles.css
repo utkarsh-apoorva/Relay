@@ -1182,3 +1182,81 @@ textarea:focus {
 .wiki-editor { margin-top: 16px; }
 .wiki-content { margin-top: 16px; }
 .wiki-loading { padding: 48px; text-align: center; color: #8b8b99; }
+
+/* ── MarkdownEditor ─────────────────────────────────────── */
+.md-editor {
+  border: 1px solid #2a2a30;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #161618;
+}
+.md-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+.md-editor-toolbar-left {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+  padding-right: 8px;
+}
+.md-editor-toolbar-left::-webkit-scrollbar { display: none; }
+.md-editor-btn {
+  background: transparent;
+  border: none;
+  color: #949ba4;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.md-editor-btn:hover  { background: rgba(255,255,255,0.06); }
+.md-editor-btn:active { background: rgba(255,255,255,0.10); }
+.md-editor-toggle {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+}
+.md-editor-toggle button {
+  background: transparent;
+  border: none;
+  color: #4a4a55;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.md-editor-toggle button.active {
+  color: #dadada;
+  border-bottom-color: #7c6aff;
+}
+.md-editor-toggle button:hover { color: #8b8b99; }
+.md-editor-textarea {
+  width: 100%;
+  background: #161618;
+  border: none;
+  border-radius: 0;
+  color: #dadada;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: 12px 14px;
+  resize: vertical;
+  outline: none;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+.md-editor-textarea::placeholder { color: #4a4a55; font-style: italic; }
+.md-editor-textarea:focus { border-color: #7c6aff; }
+.md-editor-preview {
+  padding: 12px 14px;
+  min-height: 80px;
+}
