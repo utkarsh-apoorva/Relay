@@ -77,10 +77,8 @@ export default function App() {
   const [apiKeyCollapsed, setApiKeyCollapsed] = useState(false)
   const [projectId, setProjectId] = useState('')
   const [sprintId, setSprintId] = useState('')
-  const [selectedTask, setSelectedTask] = useState(null)
   const [taskDraft, setTaskDraft] = useState(blankTask())
   const [sprintDraft, setSprintDraft] = useState(blankSprint())
-  const [commentText, setCommentText] = useState('')
   const [taskModalOpen, setTaskModalOpen] = useState(false)
   const [sprintModalOpen, setSprintModalOpen] = useState(false)
 
@@ -154,8 +152,6 @@ export default function App() {
   const openTaskModal = (task = null) => {
     const baseProjectId = task ? String(task.project_id) : String(projectId || projects[0]?.id || '')
     const baseSprintId = task ? String(task.sprint_id || '') : String(sprintId || '')
-    setSelectedTask(task)
-    setCommentText('')
     setTaskDraft(
       task
         ? {
@@ -179,8 +175,7 @@ export default function App() {
 
   const closeTaskModal = () => {
     setTaskModalOpen(false)
-    setSelectedTask(null)
-    setCommentText('')
+    setTaskDraft(blankTask())
   }
 
   const saveTask = async (event) => {
@@ -197,14 +192,8 @@ export default function App() {
       tags: taskDraft.tags,
       due_date: taskDraft.due_date,
     }
-    if (selectedTask) {
-      await api(`/api/tasks/${selectedTask.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
-      if (commentText.trim()) {
-        await api(`/api/tasks/${selectedTask.id}/comment`, {
-          method: 'POST',
-          body: JSON.stringify({ content: commentText.trim(), author_id: HUMAN_ID, author_type: 'human' }),
-        })
-      }
+    if (taskDraft.id) {
+      await api(`/api/tasks/${taskDraft.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
     } else {
       await api('/api/tasks', {
         method: 'POST',
@@ -379,7 +368,7 @@ export default function App() {
 
       {taskModalOpen ? (
         <Modal
-          title={selectedTask ? 'Edit task' : 'New task'}
+          title={taskDraft.id ? 'Edit task' : 'New task'}
           onClose={closeTaskModal}
           footer={
             <>
@@ -455,16 +444,16 @@ export default function App() {
             <Field label="Tags">
               <input value={taskDraft.tags} onChange={(e) => setTaskDraft((current) => ({ ...current, tags: e.target.value }))} placeholder="relay, backend" />
             </Field>
-            {!selectedTask ? (
+            {!taskDraft.id ? (
               <Field label="Initial comment">
                 <textarea rows="3" value={taskDraft.comment} onChange={(e) => setTaskDraft((current) => ({ ...current, comment: e.target.value }))} />
               </Field>
             ) : null}
-            {selectedTask ? (
+            {taskDraft.id ? (
               <div className="comments">
                 <div className="panel-title">Comments</div>
                 <div className="stack">
-                  {selectedTask.comments?.map((comment) => (
+                  {(tasks.find((t) => String(t.id) === String(taskDraft.id))?.comments || []).map((comment) => (
                     <div className="comment" key={comment.id}>
                       <strong>{comment.author_id}</strong>
                       <div className="muted">{prettyDate(comment.created_at?.slice?.(0, 10) || comment.created_at)}</div>
@@ -472,9 +461,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <Field label="Add comment">
-                  <textarea rows="3" value={commentText} onChange={(e) => setCommentText(e.target.value)} />
-                </Field>
               </div>
             ) : null}
           </form>
