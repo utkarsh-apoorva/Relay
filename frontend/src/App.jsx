@@ -31,13 +31,6 @@ const blankTask = (projectId = '', sprintId = '') => ({
   comment: '',
 })
 
-const blankProject = () => ({
-  name: '',
-  description: '',
-  status: 'Active',
-  lead_agent_id: '',
-})
-
 const blankSprint = (projectId = '') => ({
   project_id: projectId ? String(projectId) : '',
   name: '',
@@ -99,11 +92,9 @@ export default function App() {
   const [selectedAgentId, setSelectedAgentId] = useState('')
   const [selectedTask, setSelectedTask] = useState(null)
   const [taskDraft, setTaskDraft] = useState(blankTask())
-  const [projectDraft, setProjectDraft] = useState(blankProject())
   const [sprintDraft, setSprintDraft] = useState(blankSprint())
   const [commentText, setCommentText] = useState('')
   const [taskModalOpen, setTaskModalOpen] = useState(false)
-  const [projectModalOpen, setProjectModalOpen] = useState(false)
   const [sprintModalOpen, setSprintModalOpen] = useState(false)
   const [approvalTargets, setApprovalTargets] = useState({})
 
@@ -310,16 +301,6 @@ export default function App() {
     }
     await load()
     closeTaskModal()
-  }
-
-  const saveProject = async (event) => {
-    event.preventDefault()
-    await api('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(projectDraft),
-    })
-    await load()
-    setProjectModalOpen(false)
   }
 
   const saveSprint = async (event) => {
@@ -883,41 +864,6 @@ export default function App() {
                 </Field>
               </div>
             ) : null}
-          </form>
-        </Modal>
-      ) : null}
-
-      {projectModalOpen ? (
-        <Modal
-          title="New project"
-          onClose={() => setProjectModalOpen(false)}
-          footer={
-            <>
-              <button className="secondary-button" onClick={() => setProjectModalOpen(false)} type="button">Cancel</button>
-              <button className="primary-button" onClick={saveProject} type="button">Create</button>
-            </>
-          }
-        >
-          <form className="modal-form" onSubmit={saveProject}>
-            <Field label="Name">
-              <input value={projectDraft.name} onChange={(e) => setProjectDraft((current) => ({ ...current, name: e.target.value }))} required />
-            </Field>
-            <Field label="Description">
-              <textarea rows="4" value={projectDraft.description} onChange={(e) => setProjectDraft((current) => ({ ...current, description: e.target.value }))} />
-            </Field>
-            <div className="grid two-col">
-              <Field label="Status">
-                <select value={projectDraft.status} onChange={(e) => setProjectDraft((current) => ({ ...current, status: e.target.value }))}>
-                  {['Active', 'Paused', 'Completed'].map((status) => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </Field>
-              <Field label="Lead agent">
-                <select value={projectDraft.lead_agent_id} onChange={(e) => setProjectDraft((current) => ({ ...current, lead_agent_id: e.target.value }))}>
-                  <option value="">Unassigned</option>
-                  {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
-                </select>
-              </Field>
-            </div>
           </form>
         </Modal>
       ) : null}
