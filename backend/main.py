@@ -165,6 +165,11 @@ async def harden_requests(request: Request, call_next):
     return response
 
 Base.metadata.create_all(bind=engine)
+
+# Ensure new columns exist before any queries hit them (SQLite ALTER TABLE)
+from .orchestrator import _ensure_columns
+_ensure_columns()
+
 ensure_api_key_storage(engine)
 with SessionLocal() as db:
     seed(db)
