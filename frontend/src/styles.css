@@ -1139,3 +1139,46 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 }
+
+.wiki-layout { max-width: 900px; margin: 0 auto; padding: 24px; }
+.wiki-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.wiki-back {
+  background: none;
+  border: none;
+  color: #7c6aff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+}
+.wiki-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #dadada;
+  margin: 0;
+  flex: 1;
+}
+.wiki-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wiki-updated {
+  font-size: 0.75rem;
+  color: #4a4a55;
+}
+.wiki-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: #8b8b99;
+}
+.wiki-empty p { margin: 0 0 8px; }
+.wiki-empty-sub { font-size: 0.875rem; margin-bottom: 24px; }
+.wiki-editor { margin-top: 16px; }
+.wiki-content { margin-top: 16px; }
+.wiki-loading { padding: 48px; text-align: center; color: #8b8b99; }
