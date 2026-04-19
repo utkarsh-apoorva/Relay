@@ -141,7 +141,18 @@ export default function ProjectCreationPage() {
                 placeholder="What's the goal? What context does the orchestrator need? What constraints exist?"
                 required
               />
-              <span className="field-hint">Markdown supported. Be specific, the orchestrator reads every word.</span>
+              {(() => {
+                const words = draft.brief.trim() ? draft.brief.trim().split(/\s+/).length : 0
+                const over = words > 500
+                const warn = words > 450
+                return (
+                  <span className="field-hint" style={over ? { color: '#f05252' } : warn ? { color: '#f0a732' } : {}}>
+                    {words} / 500 words
+                    {over ? ' — brief exceeds 500 words. The orchestrator reads every word.' : ''}
+                  </span>
+                )
+              })()}
+              <span className="field-hint">Markdown supported. Be specific — the orchestrator reads every word.</span>
             </label>
 
             <label className="field">
