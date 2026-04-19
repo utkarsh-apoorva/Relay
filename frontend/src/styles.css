@@ -1057,6 +1057,47 @@ textarea:focus {
   gap: 16px;
 }
 
+.orchestrator-banner--working {
+  background: rgba(124, 106, 255, 0.08);
+  border: 1px solid rgba(124, 106, 255, 0.2);
+  color: #c4b5fd;
+}
+
+.orchestrator-banner--ready {
+  background: rgba(42, 223, 170, 0.08);
+  border: 1px solid rgba(42, 223, 170, 0.2);
+}
+
+.orchestrator-banner--failed {
+  background: rgba(240, 82, 82, 0.08);
+  border: 1px solid rgba(240, 82, 82, 0.2);
+  color: #fca5a5;
+}
+
+
+.orchestrator-banner__title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.orchestrator-banner__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.orchestrator-spinner {
+  display: inline-block;
+  animation: spinIcon 1.5s linear infinite;
+}
+
+@keyframes spinIcon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .orchestrator-banner.working {
   background: rgba(124, 106, 255, 0.08);
   border: 1px solid rgba(124, 106, 255, 0.2);
