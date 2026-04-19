@@ -313,6 +313,18 @@ export default function App() {
               ))}
           </div>
         </div>
+
+        <div className="panel">
+          <div className="panel-title">Agents</div>
+          <button
+            className="project-chip"
+            onClick={() => navigate('/agents')}
+            type="button"
+          >
+            <strong>Agent Registry</strong>
+            <div className="muted">Capabilities &amp; status</div>
+          </button>
+        </div>
       </aside>
 
       <main className="content">
