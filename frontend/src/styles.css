@@ -771,8 +771,32 @@ textarea:focus {
   .tdp-body { grid-template-columns: 1fr; }
   .tdp-sidebar { order: -1; }
 }
-.tdp-section {
-  margin-bottom: 32px;
+.tdp-section-view { position: relative; }
+.tdp-section { position: relative; margin-bottom: 32px; }
+.tdp-section-edit-btn {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  background: none;
+  border: none;
+  color: #4a4a55;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tdp-section-edit-btn:hover { color: #7c6aff; background: rgba(124,106,255,0.1); }
+.tdp-edit-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+.tdp-section-edit-mode { margin-bottom: 16px; }
+.tdp-field-error {
+  color: #fca5a5;
+  font-size: 0.8rem;
+  margin: 6px 0 0;
 }
 .tdp-section-title {
   font-size: 0.75rem;
