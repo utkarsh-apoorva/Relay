@@ -141,97 +141,89 @@ export default function TaskDetailPage() {
       <div className="tdp-body">
         {/* Main content */}
         <div className="tdp-main">
-          {task.description && (
-            <Section title="Description">
-              {editingField === 'description' ? (
-                <div className="tdp-section-edit-mode">
-                  <MarkdownEditor
-                    value={draft}
-                    onChange={setDraft}
-                  />
-                  {fieldErrors.description && <p className="tdp-field-error">{fieldErrors.description}</p>}
-                  <div className="tdp-edit-bar">
-                    <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
-                    <button className="primary-button" onClick={() => saveField('description')}>Save</button>
-                  </div>
+          <Section title="Description">
+            {editingField === 'description' ? (
+              <div className="tdp-section-edit-mode">
+                <MarkdownEditor value={draft} onChange={setDraft} />
+                {fieldErrors.description && <p className="tdp-field-error">{fieldErrors.description}</p>}
+                <div className="tdp-edit-bar">
+                  <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
+                  <button className="primary-button" onClick={() => saveField('description')}>Save</button>
                 </div>
-              ) : (
-                <div className="tdp-section-view">
-                  <MarkdownRenderer content={task.description} />
-                  <button className="tdp-section-edit-btn" onClick={() => startEditing('description', task.description)}>✏️ Edit</button>
-                </div>
-              )}
-            </Section>
-          )}
+              </div>
+            ) : (
+              <div className="tdp-section-view">
+                {task.description
+                  ? <MarkdownRenderer content={task.description} />
+                  : <p className="tdp-empty-placeholder">No description yet. <button className="tdp-section-edit-btn" onClick={() => startEditing('description', '')}>Add one</button></p>
+                }
+                <button className="tdp-section-edit-btn" onClick={() => startEditing('description', task.description || '')}>✏️ {task.description ? 'Edit' : 'Add'}</button>
+              </div>
+            )}
+          </Section>
 
-          {task.eval_brief && (
-            <Section title="Eval Brief" accent={sectionAccentMap['eval_brief']}>
-              {editingField === 'eval_brief' ? (
-                <div className="tdp-section-edit-mode">
-                  <MarkdownEditor
-                    value={draft}
-                    onChange={setDraft}
-                  />
-                  {fieldErrors.eval_brief && <p className="tdp-field-error">{fieldErrors.eval_brief}</p>}
-                  <div className="tdp-edit-bar">
-                    <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
-                    <button className="primary-button" onClick={() => saveField('eval_brief')}>Save</button>
-                  </div>
+          <Section title="Eval Brief" accent={sectionAccentMap['eval_brief']}>
+            {editingField === 'eval_brief' ? (
+              <div className="tdp-section-edit-mode">
+                <MarkdownEditor value={draft} onChange={setDraft} />
+                {fieldErrors.eval_brief && <p className="tdp-field-error">{fieldErrors.eval_brief}</p>}
+                <div className="tdp-edit-bar">
+                  <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
+                  <button className="primary-button" onClick={() => saveField('eval_brief')}>Save</button>
                 </div>
-              ) : (
-                <div className="tdp-section-view">
-                  <MarkdownRenderer content={task.eval_brief} />
-                  <button className="tdp-section-edit-btn" onClick={() => startEditing('eval_brief', task.eval_brief)}>✏️ Edit</button>
-                </div>
-              )}
-            </Section>
-          )}
+              </div>
+            ) : (
+              <div className="tdp-section-view">
+                {task.eval_brief
+                  ? <MarkdownRenderer content={task.eval_brief} />
+                  : <p className="tdp-empty-placeholder">No eval brief yet. <button className="tdp-section-edit-btn" onClick={() => startEditing('eval_brief', '')}>Add one</button></p>
+                }
+                <button className="tdp-section-edit-btn" onClick={() => startEditing('eval_brief', task.eval_brief || '')}>✏️ {task.eval_brief ? 'Edit' : 'Add'}</button>
+              </div>
+            )}
+          </Section>
 
-          {task.result_description && (
-            <Section title="Result" accent={sectionAccentMap['result_description']}>
-              {editingField === 'result_description' ? (
-                <div className="tdp-section-edit-mode">
-                  <MarkdownEditor
-                    value={draft}
-                    onChange={setDraft}
-                  />
-                  {fieldErrors.result_description && <p className="tdp-field-error">{fieldErrors.result_description}</p>}
-                  <div className="tdp-edit-bar">
-                    <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
-                    <button className="primary-button" onClick={() => saveField('result_description')}>Save</button>
-                  </div>
+          <Section title="Result" accent={sectionAccentMap['result_description']}>
+            {editingField === 'result_description' ? (
+              <div className="tdp-section-edit-mode">
+                <MarkdownEditor value={draft} onChange={setDraft} />
+                {fieldErrors.result_description && <p className="tdp-field-error">{fieldErrors.result_description}</p>}
+                <div className="tdp-edit-bar">
+                  <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
+                  <button className="primary-button" onClick={() => saveField('result_description')}>Save</button>
                 </div>
-              ) : (
-                <div className="tdp-section-view">
-                  <MarkdownRenderer content={task.result_description} />
-                  <button className="tdp-section-edit-btn" onClick={() => startEditing('result_description', task.result_description)}>✏️ Edit</button>
-                </div>
-              )}
-            </Section>
-          )}
+              </div>
+            ) : (
+              <div className="tdp-section-view">
+                {task.result_description
+                  ? <MarkdownRenderer content={task.result_description} />
+                  : <p className="tdp-empty-placeholder">No result yet. <button className="tdp-section-edit-btn" onClick={() => startEditing('result_description', '')}>Add one</button></p>
+                }
+                <button className="tdp-section-edit-btn" onClick={() => startEditing('result_description', task.result_description || '')}>✏️ {task.result_description ? 'Edit' : 'Add'}</button>
+              </div>
+            )}
+          </Section>
 
-          {task.judgement && (
-            <Section title="Judgement" accent={sectionAccentMap['judgement']}>
-              {editingField === 'judgement' ? (
-                <div className="tdp-section-edit-mode">
-                  <MarkdownEditor
-                    value={draft}
-                    onChange={setDraft}
-                  />
-                  {fieldErrors.judgement && <p className="tdp-field-error">{fieldErrors.judgement}</p>}
-                  <div className="tdp-edit-bar">
-                    <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
-                    <button className="primary-button" onClick={() => saveField('judgement')}>Save</button>
-                  </div>
+          <Section title="Judgement" accent={sectionAccentMap['judgement']}>
+            {editingField === 'judgement' ? (
+              <div className="tdp-section-edit-mode">
+                <MarkdownEditor value={draft} onChange={setDraft} />
+                {fieldErrors.judgement && <p className="tdp-field-error">{fieldErrors.judgement}</p>}
+                <div className="tdp-edit-bar">
+                  <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
+                  <button className="primary-button" onClick={() => saveField('judgement')}>Save</button>
                 </div>
-              ) : (
-                <div className="tdp-section-view">
-                  <MarkdownRenderer content={task.judgement} />
-                  <button className="tdp-section-edit-btn" onClick={() => startEditing('judgement', task.judgement)}>✏️ Edit</button>
-                </div>
-              )}
-            </Section>
-          )}
+              </div>
+            ) : (
+              <div className="tdp-section-view">
+                {task.judgement
+                  ? <MarkdownRenderer content={task.judgement} />
+                  : <p className="tdp-empty-placeholder">No judgement yet. <button className="tdp-section-edit-btn" onClick={() => startEditing('judgement', '')}>Add one</button></p>
+                }
+                <button className="tdp-section-edit-btn" onClick={() => startEditing('judgement', task.judgement || '')}>✏️ {task.judgement ? 'Edit' : 'Add'}</button>
+              </div>
+            )}
+          </Section>
 
           {/* Comments — humans only */}
           <Section title={`Comments (${(task.comments || []).length})`}>
