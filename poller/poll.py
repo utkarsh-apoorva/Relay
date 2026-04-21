@@ -182,7 +182,7 @@ def push_to_session(session_key: str, message: str) -> bool:
 
 # ── Polling ───────────────────────────────────────────────────────────────────
 
-def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, set[int]]) -> None:
+def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, set[int]], run_id: str) -> None:
     """Poll one agent's tasks, notify on new tasks, update state."""
     tasks = fetch_agent_tasks(agent_id, api_key)
     if not isinstance(tasks, list):
@@ -212,6 +212,7 @@ def poll_agent(agent_id: str, agent_name: str, api_key: str, state: dict[str, se
         msg = (
             f"📋 New Relay task for {agent_name}:\n\n"
             f"{summary}\n\n"
+            f"Run ID: {run_id}\n"
             f"Task ID: {task_id}\n"
             f"View in Relay: {RELAY_BASE_URL}"
         )
@@ -254,6 +255,7 @@ def run_poll_once() -> None:
 
     print(f"[relay-poller] Polling {len(agents)} agent(s) at {datetime.now(timezone.utc).isoformat()}")
     state = load_state()
+    run_id = str(uuid.uuid4())[:8]  # short run ID for tracing
 
     for agent in agents:
         aid = agent.get("id", "?")
@@ -262,7 +264,7 @@ def run_poll_once() -> None:
         if not key:
             print(f"[relay-poller] Skipping {aid}: no API key", file=sys.stderr)
             continue
-        poll_agent(aid, name, key, state)
+        poll_agent(aid, name, key, state, run_id)
 
     save_state(state)
 
