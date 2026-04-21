@@ -798,6 +798,17 @@ textarea:focus {
   font-size: 0.8rem;
   margin: 6px 0 0;
 }
+.tdp-empty-placeholder {
+  color: #8b8b99;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0 0 8px;
+}
+.tdp-empty-placeholder .tdp-section-edit-btn {
+  font-style: normal;
+  color: #7c6aff;
+  font-size: inherit;
+}
 .tdp-section-title {
   font-size: 0.75rem;
   text-transform: uppercase;
