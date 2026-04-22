@@ -11,3 +11,4 @@ skills/
 .venv/
 backend/.venv/
 *.egg-info/
+.coverage
