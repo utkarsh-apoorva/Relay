@@ -25,7 +25,7 @@
         <key>RELAY_HUMAN_CHAT_ID</key>
         <string>8636971702</string>
         <key>RELAY_AGENTS</key>
-        <string>[{"id":"linus","name":"Linus","api_key":"linus-key"},{"id":"main","name":"Gandalf","api_key":"gandalf-key"},{"id":"clay","name":"Clay","api_key":"clay-key"},{"id":"ive","name":"Ive","api_key":"ive-key"},{"id":"thanos","name":"Thanos","api_key":"thanos-key"}]</string>
+        <string>[{"id":"linus","name":"Linus","api_key":"linus-key"},{"id":"main","name":"Gandalf","api_key":"gandalf-key"},{"id":"clay","name":"Clay","api_key":"clay-key"},{"id":"ive","name":"Ive","api_key":"ive-key"},{"id":"susan","name":"Susan","api_key":"gandalf-key"},{"id":"thanos","name":"Thanos","api_key":"thanos-key"}]</string>
         <key>RELAY_TO_OPENCLAW_MAP</key>
         <string>gandalf→main</string>
         <key>POLL_INTERVAL</key>
