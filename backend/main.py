@@ -706,6 +706,19 @@ def list_tasks(
     return [serialize_task(task, db) for task in tasks]
 
 
+@app.get("/api/tasks/{task_id}")
+def get_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    api_owner(x_api_key, db)
+    task = db.get(Task, task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    return serialize_task(task, db)
+
+
 @app.post("/api/tasks")
 def create_task(
     payload: dict,
