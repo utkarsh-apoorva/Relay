@@ -84,6 +84,7 @@ export default function TaskDetailPage() {
     'eval_brief': '#f0a732',
     'result_description': '#2adfaa',
     'judgement': '#7c6aff',
+    'trace': '#ff9f43',
   };
 
   const startEditing = (field, value) => {
@@ -221,6 +222,27 @@ export default function TaskDetailPage() {
                   : <p className="tdp-empty-placeholder">No judgement yet. <button className="tdp-section-edit-btn" onClick={() => startEditing('judgement', '')}>Add one</button></p>
                 }
                 <button className="tdp-section-edit-btn" onClick={() => startEditing('judgement', task.judgement || '')}>✏️ {task.judgement ? 'Edit' : 'Add'}</button>
+              </div>
+            )}
+          </Section>
+
+          <Section title="Trace" accent={sectionAccentMap['trace']}>
+            {editingField === 'trace' ? (
+              <div className="tdp-section-edit-mode">
+                <MarkdownEditor value={draft} onChange={setDraft} />
+                {fieldErrors.trace && <p className="tdp-field-error">{fieldErrors.trace}</p>}
+                <div className="tdp-edit-bar">
+                  <button className="secondary-button" onClick={cancelEditing}>Cancel</button>
+                  <button className="primary-button" onClick={() => saveField('trace')}>Save</button>
+                </div>
+              </div>
+            ) : (
+              <div className="tdp-section-view">
+                {task.trace
+                  ? <MarkdownRenderer content={task.trace} />
+                  : <p className="tdp-empty-placeholder">No trace yet. <button className="tdp-section-edit-btn" onClick={() => startEditing('trace', '')}>Add one</button></p>
+                }
+                <button className="tdp-section-edit-btn" onClick={() => startEditing('trace', task.trace || '')}>✏️ {task.trace ? 'Edit' : 'Add'}</button>
               </div>
             )}
           </Section>

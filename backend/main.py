@@ -336,6 +336,7 @@ def serialize_task(task: Task, db: Session) -> dict[str, Any]:
         "result_description": task.result_description,
         "eval_brief": task.eval_brief,
         "judgement": task.judgement,
+        "trace": task.trace,
         "depends_on": task.depends_on,
         "created_at": task.created_at,
         "updated_at": task.updated_at,
@@ -797,6 +798,8 @@ def patch_task(
         task.eval_brief = clean_text(payload["eval_brief"], "eval_brief", max_length=10000)
     if "judgement" in payload:
         task.judgement = clean_text(payload["judgement"], "judgement", max_length=10000)
+    if "trace" in payload:
+        task.trace = clean_text(payload["trace"], "trace", max_length=10000)
     if "tags" in payload:
         task.tags = parse_tags(payload["tags"])
     if "sprint_id" in payload:

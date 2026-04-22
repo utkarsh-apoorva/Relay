@@ -53,7 +53,7 @@ _migrated = False
 
 
 def _ensure_columns() -> None:
-    """Add depends_on / capabilities columns if missing (SQLite ALTER TABLE)."""
+    """Add depends_on / capabilities / trace columns if missing (SQLite ALTER TABLE)."""
     global _migrated
     if _migrated:
         return
@@ -68,6 +68,9 @@ def _ensure_columns() -> None:
     if "depends_on" not in cols:
         cur.execute("ALTER TABLE tasks ADD COLUMN depends_on TEXT DEFAULT ''")
         logger.info("Added depends_on column to tasks")
+    if "trace" not in cols:
+        cur.execute("ALTER TABLE tasks ADD COLUMN trace TEXT DEFAULT ''")
+        logger.info("Added trace column to tasks")
     # Agent.capabilities
     cur.execute("PRAGMA table_info(agents)")
     cols = {row[1] for row in cur.fetchall()}

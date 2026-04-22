@@ -63,6 +63,7 @@ class Task(Base):
     result_description: Mapped[str] = mapped_column(Text, default="")
     eval_brief: Mapped[str] = mapped_column(Text, default="")
     judgement: Mapped[str] = mapped_column(Text, default="")
+    trace: Mapped[str] = mapped_column(Text, default="")
     # Comma-separated task IDs this task depends on (smallest viable deps)
     depends_on: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[str] = mapped_column(String, default=lambda: datetime.utcnow().isoformat())
